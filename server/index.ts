@@ -1,10 +1,8 @@
-// server/index.ts
-
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { Server } from 'colyseus';
 import { createServer } from 'http';
 import { RedisPresence } from '@colyseus/redis-presence';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 import connectDB from './db'; // Import MongoDB connection
 import GameRoom from './GameRoom'; // Import the Colyseus room
 
@@ -27,7 +25,7 @@ gameServer.define('game_room', GameRoom);
 connectDB();
 
 // Basic route for health check
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
   res.send('Server is running!');
 });
 

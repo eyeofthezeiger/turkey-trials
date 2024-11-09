@@ -1,11 +1,9 @@
+// server/GameRoom.ts
 import { Room, Client } from 'colyseus';
-import { RedisPresence } from '@colyseus/redis-presence';
 
 class GameRoom extends Room {
   onCreate() {
     this.maxClients = 60;
-    // Initialize RedisPresence with the Redis URL
-    this.setPresence(new RedisPresence(process.env.REDIS_URL));
     console.log('Game room created with Redis presence');
   }
 
