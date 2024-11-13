@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: game-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: game-app
+  template:
+    metadata:
+      labels:
+        app: game-app
+    spec:
+      containers:
+      - name: game-container
+        image: gcr.io/eloquent-petal-441422-v5/game-project
+        ports:
+        - containerPort: 3000
+        env:
+        - name: MONGODB_URI
+          value: mongodb+srv://matthewzeiger47:M1mWzJr8Qv6HZo47@cluster0.41bvb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+        - name: REDIS_URL
+          value: redis-13678.c91.us-east-1-3.ec2.redns.redis-cloud.com:13678
