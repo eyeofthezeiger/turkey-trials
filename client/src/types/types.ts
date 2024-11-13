@@ -27,3 +27,32 @@ export interface SlidingPuzzleRoomMessages {
   puzzleCompleted: { completionTime: number };
 }
 
+// types.ts
+
+// types.ts
+
+// types.ts
+
+// types.ts
+
+// types.ts
+
+export interface RedLightGreenLightRoomMessages {
+  light: { light: string };  // Correct type: message contains a 'light' object
+  winner: { winner: string }; // Winner message
+}
+
+export interface RedLightGreenLightState {
+  light: string;
+  players: { [sessionId: string]: Player };
+  automatic: boolean;
+}
+
+export interface Player {
+  position: number;
+}
+
+
+
+
+
