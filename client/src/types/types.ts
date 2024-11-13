@@ -18,3 +18,12 @@ export interface RPSGameState {
   winner: string | null;
   gameInProgress: boolean;
 }
+
+// types.ts
+
+export interface SlidingPuzzleRoomMessages {
+  welcome: { message: string };
+  puzzleStarted: { message: string };
+  puzzleCompleted: { completionTime: number };
+}
+
