@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Client, Room } from "colyseus.js";
-import { RPSGameState, Move } from "./types/types";
+import { RPSGameState, Move } from "../../types/types";
 
 const RPSGameBoard: React.FC = () => {
   const [room, setRoom] = useState<Room<RPSGameState> | null>(null);

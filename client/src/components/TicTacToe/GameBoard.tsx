@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Client, Room } from "colyseus.js";
-import { GameState } from "./types/types"; // Import the client-specific GameState type
+import { GameState } from "../../types/types"; // Import the client-specific GameState type
 
 const GameBoard: React.FC = () => {
   const [room, setRoom] = useState<Room<GameState> | null>(null);

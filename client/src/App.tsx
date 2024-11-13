@@ -1,29 +1,29 @@
 // App.tsx
 
-import React from "react";
-import GameBoard from "./GameBoard";
-import RPSGameBoard from "./RPSGameBoard";
-import SlidingPuzzle from "./SlidingPuzzle";
-import PlayerScreen from "./PlayerScreen";
-import HostScreen from "./HostScreen";
-import { useRoom } from "./useRoom";
+import React, { useState } from "react";
+import HostScreen from "./host/HostScreen";
+import FinalRound from "./screens/FinalRound";
+import Round1 from "./screens/Round1";
+import Round2 from "./screens/Round2";
+import Round3 from "./screens/Round3";
+import StartPage from "./screens/StartPage";
+
 
 const App: React.FC = () => {
-  const room = useRoom("red_light_green_light"); // Use your room name here
+  const [round, setRound] = useState(0);
+
+  const advanceRound = () => setRound((prevRound) => prevRound + 1);
 
   return (
-    <div>
-      <GameBoard />
-      <RPSGameBoard />
-      <SlidingPuzzle />
-      <PlayerScreen />
-      {/* Pass the room to PlayerScreen and HostScreen */}
-      {/* {room && (
-        <>
-          <PlayerScreen room={room} />
-          <HostScreen room={room} />
-        </>
-      )} */}
+    <div style={{ textAlign: "center" }}>
+      {round === 0 && <StartPage onStart={() => setRound(1)} />}
+      {round === 1 && <Round1 onAdvance={advanceRound} />}
+      {round === 2 && <Round2 onAdvance={advanceRound} />}
+      {round === 3 && <Round3 onAdvance={advanceRound} />}
+      {round === 4 && <FinalRound onWin={() => setRound(5)} />}
+      {round === 5 && <h1>Congratulations! You've won the tournament!</h1>}
+
+      <HostScreen currentRound={round} />
     </div>
   );
 };
