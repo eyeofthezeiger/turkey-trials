@@ -41,6 +41,7 @@ import { Server } from "colyseus";
 const express = require("express");
 import { createServer } from "http";
 import { TicTacToeRoom } from "./TicTacToeRoom"
+import { RPSRoom } from "./RPSRoom";
 
 const app = express();
 const server = createServer(app);
@@ -50,6 +51,8 @@ const gameServer = new Server({
 
 // Register the Tic Tac Toe room
 gameServer.define("tic_tac_toe", TicTacToeRoom);
+
+gameServer.define("rps_room", RPSRoom);
 
 // Start the server
 const PORT = 2567;

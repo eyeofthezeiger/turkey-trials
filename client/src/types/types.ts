@@ -7,3 +7,14 @@ export interface GameState {
     gameInProgress: boolean;
   }
   
+
+  // client/types.ts
+
+export type Move = "rock" | "paper" | "scissors";
+
+export interface RPSGameState {
+  player1Move: Move | null;
+  player2Move: Move | null;
+  winner: string | null;
+  gameInProgress: boolean;
+}
