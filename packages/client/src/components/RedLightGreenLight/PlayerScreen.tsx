@@ -1,72 +1,79 @@
-// PlayerScreen.tsx
+import React, { useState, useEffect } from "react";
+import { Client, Room } from "colyseus.js";
 
-import React, { useEffect, useState } from "react";
+const SERVER_URL = "ws://localhost:2567";
 
 const PlayerScreen: React.FC = () => {
-  const [position, setPosition] = useState(0); // Player's position
-  const [light, setLight] = useState("Red"); // Light state (Red/Green)
-  const [winner, setWinner] = useState<string | null>(null); // Win condition
+  const [room, setRoom] = useState<Room | null>(null);
+  const [position, setPosition] = useState(0);
+  const [light, setLight] = useState("Red");
+  const [players, setPlayers] = useState<{ id: string; position: number }[]>([]);
 
   useEffect(() => {
-    // Simulate automatic light change every 3-5 seconds
-    const lightInterval = setInterval(() => {
-      setLight((prevLight) => (prevLight === "Red" ? "Green" : "Red"));
-    }, Math.random() * 3000 + 2000); // Random interval between 2-5 seconds
+    const client = new Client(SERVER_URL);
+    const joinRoom = async () => {
+      const joinedRoom = await client.joinOrCreate("red_light_green_light");
+      setRoom(joinedRoom);
+
+      joinedRoom.onMessage("lightToggled", (data) => setLight(data.light));
+      joinedRoom.onMessage("playerMoved", (data) => {
+        setPlayers((prev) =>
+          prev.map((p) => (p.id === data.id ? { ...p, position: data.position } : p))
+        );
+      });
+      joinedRoom.onMessage("playerJoined", (data) => {
+        setPlayers((prev) => [...prev, { id: data.id, position: 0 }]);
+      });
+      joinedRoom.onMessage("playerLeft", (data) => {
+        setPlayers((prev) => prev.filter((p) => p.id !== data.id));
+      });
+    };
+
+    joinRoom();
 
     return () => {
-      clearInterval(lightInterval); // Clean up the interval on unmount
+      room?.leave();
     };
   }, []);
 
   const movePlayer = () => {
-    if (light === "Green") {
-      setPosition((prevPosition) => prevPosition + 10); // Move player forward by 10
-    } else {
-      setPosition(0); // Reset player position to 0 if clicked during red light
+    if (room && light === "Green") {
+      room.send("move");
+      setPosition((prev) => prev + 10);
     }
   };
 
-  useEffect(() => {
-    if (position >= 500) {
-      setWinner("You won!"); // If player reaches position 100, they win
-    }
-  }, [position]);
-
   return (
-    <div style={{ textAlign: "center", marginTop: "20px" }}>
+    <div>
       <h1>Red Light, Green Light</h1>
-
-      {/* Colored Light Box */}
       <div
         style={{
           margin: "20px",
-          padding: "10px 20px",
+          padding: "10px",
           backgroundColor: light === "Green" ? "green" : "red",
           color: "white",
-          fontSize: "24px",
-          borderRadius: "5px",
         }}
       >
         {light} Light
       </div>
-
-      {winner ? (
-        <h2>{winner}</h2>
-      ) : (
-        <button onClick={movePlayer}>
-          {light === "Green" ? "Move Forward" : "Stop!"}
-        </button>
-      )}
-
-      <div
-        style={{
-          marginTop: "20px",
-          width: "50px",
-          height: "50px",
-          backgroundColor: "blue",
-          transform: `translateX(${position}px)`, // Player's movement on X-axis
-        }}
-      ></div>
+      <button onClick={movePlayer}>Move</button>
+      <div style={{ position: "relative", height: "300px" }}>
+        {players.map((player) => (
+          <div
+            key={player.id}
+            style={{
+              position: "absolute",
+              top: 50 + players.indexOf(player) * 30,
+              left: player.position,
+              backgroundColor: player.id === room?.sessionId ? "blue" : "gray",
+              width: "50px",
+              height: "50px",
+            }}
+          >
+            {player.id === room?.sessionId ? "YOU" : `Player ${players.indexOf(player) + 1}`}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

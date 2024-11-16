@@ -1,101 +1,72 @@
-// RedLightGreenLightRoom.ts
-
 import { Room, Client } from "colyseus";
-import { Schema, MapSchema } from "@colyseus/schema";
+import { Schema, type, MapSchema } from "@colyseus/schema";
 
 class Player extends Schema {
-  position: number;
+  @type("number") position: number = 0;
+  @type("string") id: string;
 
-  constructor() {
+  constructor(id: string) {
     super();
-    this.position = 0; // Start at position 0
+    this.id = id;
   }
 }
 
-class State extends Schema {
-  light: string;
-  players: MapSchema<Player>;
-  automatic: boolean;
-
-  constructor() {
-    super();
-    this.light = "Red"; // Initial light status is "Red"
-    this.players = new MapSchema<Player>();
-    this.automatic = false; // Default to manual mode
-  }
+class RedLightGreenLightState extends Schema {
+  @type("string") light: string = "Red";
+  @type({ map: Player }) players = new MapSchema<Player>();
 }
 
-export class RedLightGreenLightRoom extends Room<State> {
+export class RedLightGreenLightRoom extends Room<RedLightGreenLightState> {
   private lightTimer: NodeJS.Timeout | null = null;
 
   onCreate() {
-    this.setState(new State());
+    this.setState(new RedLightGreenLightState());
+    console.log("RedLightGreenLight room created");
 
     this.onMessage("move", (client) => {
       const player = this.state.players.get(client.sessionId);
       if (player && this.state.light === "Green") {
-        player.position += 10; // Move player 10 units to the right
+        player.position += 10;
+        this.broadcast("playerMoved", { id: client.sessionId, position: player.position });
         this.checkWin(client);
       }
     });
 
-    this.onMessage("toggleLight", () => {
-      this.toggleLight();
-    });
-
-    this.onMessage("setAutomatic", (_, isAutomatic: boolean) => {
-      this.state.automatic = isAutomatic;
-      if (isAutomatic) {
-        console.log("Automatic mode enabled");
-        this.startAutomaticLightSwitch();
-      } else {
-        console.log("Automatic mode disabled");
-        this.stopAutomaticLightSwitch();
-      }
-    });
+    this.startAutomaticLightSwitch();
   }
 
   onJoin(client: Client) {
-    this.state.players.set(client.sessionId, new Player());
+    this.state.players.set(client.sessionId, new Player(client.sessionId));
+    this.broadcast("playerJoined", { id: client.sessionId });
   }
 
   onLeave(client: Client) {
     this.state.players.delete(client.sessionId);
-  }
-
-  toggleLight() {
-    this.state.light = this.state.light === "Red" ? "Green" : "Red";
-    this.broadcast("light", { light: this.state.light });
-    console.log(`Light toggled to ${this.state.light}`);
+    this.broadcast("playerLeft", { id: client.sessionId });
   }
 
   startAutomaticLightSwitch() {
-    this.stopAutomaticLightSwitch(); // Ensure only one interval is running
     this.lightTimer = setInterval(() => {
-      this.toggleLight();
-    }, Math.random() * 3000 + 2000); // Toggle every 2-5 seconds
-  }
-
-  stopAutomaticLightSwitch() {
-    if (this.lightTimer) {
-      clearInterval(this.lightTimer);
-      this.lightTimer = null;
-    }
+      this.state.light = this.state.light === "Red" ? "Green" : "Red";
+      this.broadcast("lightToggled", { light: this.state.light });
+    }, Math.random() * 3000 + 2000);
   }
 
   checkWin(client: Client) {
     const player = this.state.players.get(client.sessionId);
-    if (player && player.position >= 100) { // Win condition: position >= 100
-      this.broadcast("winner", { winner: client.sessionId });
-      console.log(`Player ${client.sessionId} wins!`);
+    if (player && player.position >= 500) {
+      this.broadcast("gameOver", { winner: client.sessionId });
       this.resetGame();
     }
   }
 
   resetGame() {
-    console.log("Resetting game state");
     this.state.players.forEach((player) => (player.position = 0));
     this.state.light = "Red";
-    this.broadcast("light", { light: this.state.light });
+    this.broadcast("lightToggled", { light: this.state.light });
+  }
+
+  onDispose() {
+    if (this.lightTimer) clearInterval(this.lightTimer);
   }
 }

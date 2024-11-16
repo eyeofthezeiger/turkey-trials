@@ -10,6 +10,7 @@ const StartPage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
   const [playerName, setPlayerName] = useState<string>("Player");
   const [playerColor, setPlayerColor] = useState<string>("#0000ff");
   const [isHost, setIsHost] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
 
   useEffect(() => {
     console.log("Current players in the lobby:", players);
@@ -32,10 +33,12 @@ const StartPage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
   };
 
   const setupRoomListeners = (joinedRoom: Room) => {
+    // Listen for new players joining
     joinedRoom.onMessage("playerJoined", (data) => {
       setPlayers((prev) => [...prev, data]);
     });
 
+    // Listen for host assignment
     joinedRoom.onMessage("hostAssigned", (data) => {
       if (data.hostId === joinedRoom.sessionId) {
         setIsHost(true);
@@ -43,10 +46,24 @@ const StartPage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
       }
     });
 
+    // Listen for game start
     joinedRoom.onMessage("gameStarted", () => {
+      setGameStarted(true);
       onStart();
     });
 
+    // Synchronize game state for ongoing games
+    joinedRoom.onMessage("gameState", (state) => {
+      console.log("Synchronized with current game state:", state);
+      setPlayers(state.players);
+      setGameStarted(state.gameStarted);
+
+      if (state.gameStarted) {
+        setConnectionStatus("Game in progress. You have joined as a player.");
+      }
+    });
+
+    // Handle room disconnection
     joinedRoom.onLeave(() => {
       setConnectionStatus("Disconnected");
       setRoom(null);
@@ -65,6 +82,7 @@ const StartPage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
       <h1>Welcome to the Tournament!</h1>
       <p>Status: {connectionStatus}</p>
 
+      {/* Input for player name and color */}
       {!room && (
         <div>
           <input
@@ -78,16 +96,19 @@ const StartPage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
         </div>
       )}
 
+      {/* Join Game Button */}
       <button onClick={connectToRoom} disabled={!!room} style={{ marginTop: "10px" }}>
         {room ? "Connected" : "Join Game"}
       </button>
 
-      {isHost && (
+      {/* Start Game Button for Host */}
+      {isHost && !gameStarted && (
         <button onClick={startGame} style={{ marginLeft: "10px" }}>
           Start Game
         </button>
       )}
 
+      {/* Players in Room */}
       {room && (
         <div style={{ marginTop: "20px" }}>
           <h2>Players in Room:</h2>

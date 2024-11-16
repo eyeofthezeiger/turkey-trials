@@ -27,7 +27,6 @@ export class GameLobby extends Room<RoomState> {
     this.setState(new RoomState());
     console.log("GameLobby room created");
 
-    // Handle game start
     this.onMessage("startGame", (client: Client) => {
       if (this.clients[0].sessionId !== client.sessionId) {
         client.send("error", "Only the host can start the game.");
@@ -35,27 +34,52 @@ export class GameLobby extends Room<RoomState> {
       }
 
       this.state.gameStarted = true;
-      this.broadcast("gameStarted");
+      this.broadcast("gameStarted", { roomId: this.roomId });
     });
   }
 
   onJoin(client: Client, options: { name: string; color: string }) {
-    const player = new Player(client.sessionId, options.name, options.color);
+    const isRejoining = !!this.state.players.get(client.sessionId);
 
-    if (this.state.players.size === 0) {
-      player.isHost = true;
-      this.broadcast("hostAssigned", { hostId: client.sessionId, name: player.name });
+    if (isRejoining) {
+      console.log(`Player ${client.sessionId} is rejoining.`);
+      const rejoiningPlayer = this.state.players.get(client.sessionId);
+
+      if (rejoiningPlayer) {
+        rejoiningPlayer.name = options.name || rejoiningPlayer.name;
+        rejoiningPlayer.color = options.color || rejoiningPlayer.color;
+      }
+
+      // Send current game state to rejoining player
+      client.send("gameState", {
+        gameStarted: this.state.gameStarted,
+        players: Array.from(this.state.players.values()).map((player) => ({
+          id: player.id,
+          name: player.name,
+          color: player.color,
+          isHost: player.isHost,
+        })),
+      });
+    } else {
+      // New player joining
+      const player = new Player(client.sessionId, options.name, options.color);
+
+      if (this.state.players.size === 0) {
+        player.isHost = true;
+        this.broadcast("hostAssigned", { hostId: client.sessionId, name: player.name });
+      }
+
+      this.state.players.set(client.sessionId, player);
+      this.broadcast("playerJoined", { id: client.sessionId, name: player.name, color: player.color });
     }
-
-    this.state.players.set(client.sessionId, player);
-    this.broadcast("playerJoined", { id: client.sessionId, name: player.name, color: player.color });
   }
 
   onLeave(client: Client) {
     const player = this.state.players.get(client.sessionId);
 
     if (player) {
-      this.state.players.delete(client.sessionId);
+      console.log(`Player ${player.name} (${client.sessionId}) disconnected.`);
+      // Keep the player in the game state for potential reconnection
       this.broadcast("playerLeft", { id: client.sessionId });
     }
   }
