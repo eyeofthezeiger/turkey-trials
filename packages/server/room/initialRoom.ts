@@ -1,77 +1,46 @@
 import { Room, Client } from "colyseus";
-import { Schema, type, MapSchema } from "@colyseus/schema";
 
-// Define Player schema
-class Player extends Schema {
-  @type("string") id: string;
-  @type("string") name: string;
-  @type("string") color: string;
-  @type("boolean") isHost: boolean = false;
+import { TurkeyTrialsSessionState } from "../model/game-state";
+import { Player } from "../model/game-player";
+import { getNextGameType, isRoomEmpty } from "../utils/room-helpers";
 
-  constructor(id: string, name: string, color: string) {
-    super();
-    this.id = id;
-    this.name = name;
-    this.color = color;
-  }
+interface LobbyOnJoinProps {
+  name: string;
+  color: string;
 }
 
-// Define RoomState schema
-class RoomState extends Schema {
-  @type({ map: Player }) players = new MapSchema<Player>();
-  @type("boolean") gameStarted: boolean = false;
-}
+const HOST_ASSIGNED_MSG = "hostAssigned" as const;
+const PLAYER_JOINED_MSG = "playerJoined" as const;
 
-export class GameLobby extends Room<RoomState> {
+const ON_START_MSG = "startGame" as const;
+
+export class GameLobby extends Room<TurkeyTrialsSessionState> {
   onCreate() {
-    this.setState(new RoomState());
+    this.setState(new TurkeyTrialsSessionState());
     console.log("GameLobby room created");
 
-    this.onMessage("startGame", (client: Client) => {
-      if (this.clients[0].sessionId !== client.sessionId) {
+    this.onMessage(ON_START_MSG, (client: Client) => {
+      if (this.state.hostId !== client.sessionId) {
         client.send("error", "Only the host can start the game.");
         return;
       }
 
-      this.state.gameStarted = true;
-      this.broadcast("gameStarted", { roomId: this.roomId });
+      this.changeGameType();
     });
   }
 
-  onJoin(client: Client, options: { name: string; color: string }) {
-    const isRejoining = !!this.state.players.get(client.sessionId);
+  onJoin(client: Client, { name, color }: LobbyOnJoinProps) {
+    const player = new Player(client.sessionId, name, color);
 
-    if (isRejoining) {
-      console.log(`Player ${client.sessionId} is rejoining.`);
-      const rejoiningPlayer = this.state.players.get(client.sessionId);
-
-      if (rejoiningPlayer) {
-        rejoiningPlayer.name = options.name || rejoiningPlayer.name;
-        rejoiningPlayer.color = options.color || rejoiningPlayer.color;
-      }
-
-      // Send current game state to rejoining player
-      client.send("gameState", {
-        gameStarted: this.state.gameStarted,
-        players: Array.from(this.state.players.values()).map((player) => ({
-          id: player.id,
-          name: player.name,
-          color: player.color,
-          isHost: player.isHost,
-        })),
+    if (isRoomEmpty(this.state.players)) {
+      this.state.hostId = player.id;
+      this.broadcast(HOST_ASSIGNED_MSG, {
+        id: player.id,
       });
-    } else {
-      // New player joining
-      const player = new Player(client.sessionId, options.name, options.color);
-
-      if (this.state.players.size === 0) {
-        player.isHost = true;
-        this.broadcast("hostAssigned", { hostId: client.sessionId, name: player.name });
-      }
-
-      this.state.players.set(client.sessionId, player);
-      this.broadcast("playerJoined", { id: client.sessionId, name: player.name, color: player.color });
     }
+
+    this.state.players.set(player.id, player);
+    this.broadcast(PLAYER_JOINED_MSG, player.toJSON());
   }
 
   onLeave(client: Client) {
@@ -82,5 +51,16 @@ export class GameLobby extends Room<RoomState> {
       // Keep the player in the game state for potential reconnection
       this.broadcast("playerLeft", { id: client.sessionId });
     }
+  }
+
+  private changeGameType() {
+    const nextGameType = getNextGameType(this.state.gameType);
+    this.state.gameType = nextGameType;
+
+    this.clock.setTimeout(() => {
+      if (this.state.gameType !== "end") {
+        this.changeGameType();
+      }
+    }, 60_000);
   }
 }
