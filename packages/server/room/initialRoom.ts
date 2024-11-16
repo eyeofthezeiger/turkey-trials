@@ -2,11 +2,7 @@ import { Room, Client } from "colyseus";
 
 import { TurkeyTrialsSessionState } from "../model/game-state";
 import { Player } from "../model/game-player";
-import {
-  END_GAME_TYPE,
-  getNextGameType,
-  isRoomEmpty,
-} from "../utils/room-helpers";
+import { isRoomEmpty, RED_LIGHT_GAME_TYPE } from "../utils/room-helpers";
 
 interface LobbyOnJoinProps {
   name: string;
@@ -29,7 +25,8 @@ export class GameLobby extends Room<TurkeyTrialsSessionState> {
         return;
       }
 
-      this.changeGameType();
+      this.state.gameType = RED_LIGHT_GAME_TYPE;
+      // this.changeGameType();
     });
   }
 
@@ -57,7 +54,7 @@ export class GameLobby extends Room<TurkeyTrialsSessionState> {
     }
   }
 
-  private changeGameType() {
+  /* private changeGameType() {
     const nextGameType = getNextGameType(this.state.gameType);
     this.state.gameType = nextGameType;
 
@@ -66,5 +63,5 @@ export class GameLobby extends Room<TurkeyTrialsSessionState> {
         this.changeGameType();
       }
     }, 60_000);
-  }
+  } */
 }
