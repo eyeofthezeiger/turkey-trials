@@ -1,17 +1,17 @@
 // RPSGameBoard.tsx
 
 import React, { useEffect, useState } from "react";
-import { Client, Room } from "colyseus.js";
+
 import { RPSGameState, Move } from "../../types/types";
+import { useClient } from "../../utils/client";
 
 const RPSGameBoard: React.FC = () => {
-  const [room, setRoom] = useState<Room<RPSGameState> | null>(null);
+  const { client, room, setRoom } = useClient();
   const [gameState, setGameState] = useState<RPSGameState | null>(null);
   const [playerNumber, setPlayerNumber] = useState<number | null>(null); // Track the player's assigned number
 
   useEffect(() => {
     const connectToRoom = async () => {
-      const client = new Client("ws://localhost:2567");
       const room = await client.joinOrCreate<RPSGameState>("rps_room");
       setRoom(room);
 
@@ -44,20 +44,34 @@ const RPSGameBoard: React.FC = () => {
   return (
     <div style={{ textAlign: "center" }}>
       <h1>Rock Paper Scissors</h1>
-      {playerNumber && <h2>You are Player {playerNumber}</h2>} {/* Display current player */}
+      {playerNumber && <h2>You are Player {playerNumber}</h2>}{" "}
+      {/* Display current player */}
       {gameState?.winner ? (
-        <h2>{gameState.winner === "draw" ? "It's a draw!" : `${gameState.winner} wins!`}</h2>
+        <h2>
+          {gameState.winner === "draw"
+            ? "It's a draw!"
+            : `${gameState.winner} wins!`}
+        </h2>
       ) : (
         <h2>Game in Progress</h2>
       )}
       <div>
-        <button onClick={() => makeMove("rock")} disabled={!gameState?.gameInProgress}>
+        <button
+          onClick={() => makeMove("rock")}
+          disabled={!gameState?.gameInProgress}
+        >
           Rock
         </button>
-        <button onClick={() => makeMove("paper")} disabled={!gameState?.gameInProgress}>
+        <button
+          onClick={() => makeMove("paper")}
+          disabled={!gameState?.gameInProgress}
+        >
           Paper
         </button>
-        <button onClick={() => makeMove("scissors")} disabled={!gameState?.gameInProgress}>
+        <button
+          onClick={() => makeMove("scissors")}
+          disabled={!gameState?.gameInProgress}
+        >
           Scissors
         </button>
       </div>
