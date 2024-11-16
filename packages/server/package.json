@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc -p server/tsconfig.json",
-    "start": "node dist/index.js",
+    "start": "node build/index.js",
     "dev": "nodemon --watch server --exec ts-node index.ts"
   },
   "keywords": [],
@@ -14,6 +14,7 @@
   "dependencies": {
     "@colyseus/monitor": "^0.15.8",
     "@colyseus/redis-presence": "^0.15.5",
+    "@colyseus/schema": "^2.0.36",
     "colyseus": "^0.15.17",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
