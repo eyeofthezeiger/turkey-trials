@@ -1,33 +1,54 @@
-// TicTacToeRoom.ts
-
 import { Room, Client } from "colyseus";
-import { TicTacToeGame } from "./GameState";
+import { Schema, type } from "@colyseus/schema";
 
-export class TicTacToeRoom extends Room {
-  private game: TicTacToeGame;
+class TicTacToeState extends Schema {
+  @type(["string"]) board: string[] = Array(9).fill("");
+  @type("string") currentTurn: string = "X";
+  @type("string") winner: string = "";
+}
 
-  constructor() {
-    super();
-    this.game = new TicTacToeGame(); // Initialize the game here
-  }
-
+export class TicTacToeRoom extends Room<TicTacToeState> {
   onCreate() {
-    // The game has already been initialized in the constructor
+    this.setState(new TicTacToeState());
+    console.log("Tic Tac Toe room created:", this.roomId);
+
     this.onMessage("move", (client, { index }) => {
-      if (this.game.makeMove(index)) {
-        // Broadcast the updated game state to all clients
-        this.broadcast("state", this.game);
+      const { board, currentTurn } = this.state;
+
+      if (board[index] === "" && this.state.winner === "") {
+        board[index] = currentTurn;
+        this.state.currentTurn = currentTurn === "X" ? "O" : "X";
+
+        if (this.checkWinner()) {
+          this.state.winner = currentTurn;
+          this.broadcast("winner", { winner: currentTurn });
+        } else if (board.every((cell) => cell !== "")) {
+          this.state.winner = "draw";
+          this.broadcast("winner", { winner: "draw" });
+        }
+
+        this.broadcast("state", this.state);
       }
     });
-
-    this.onMessage("reset", () => {
-      this.game.resetGame();
-      this.broadcast("state", this.game);
-    });
   }
 
-  onJoin(client: Client) {
-    // Send the initial game state to the newly joined player
-    client.send("state", this.game);
+  checkWinner() {
+    const winningCombos = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
+    ];
+
+    return winningCombos.some(
+      (combo) =>
+        this.state.board[combo[0]] !== "" &&
+        this.state.board[combo[0]] === this.state.board[combo[1]] &&
+        this.state.board[combo[1]] === this.state.board[combo[2]]
+    );
   }
 }
