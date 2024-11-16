@@ -6,7 +6,7 @@ import { PicturePuzzleState } from "./picture-puzzle";
 import { TicTacToeSessionState } from "./tic-tac-toe";
 import { RockPaperScissorState } from "./rock-paper-scissor";
 import { Player } from "./game-player";
-import { LOBBY_GAME_TYPE } from "../room/initialRoom";
+import { LOBBY_GAME_TYPE } from "../utils/room-helpers";
 
 class TurkeyTrialsSessionState extends Schema {
   @type("string") hostId: string;
