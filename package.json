@@ -11,20 +11,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "@colyseus/redis-presence": "^0.15.5",
-    "colyseus": "^0.15.17",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.1",
-    "ioredis": "^5.4.1",
-    "mongoose": "^8.8.1",
-    "redis": "^4.7.0"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.0",
-    "@types/node": "^22.9.0",
-    "nodemon": "^3.1.7",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.6.3"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }
