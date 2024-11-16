@@ -29,4 +29,4 @@ const getNextGameType = (gameType: string) => {
   }
 };
 
-export { isRoomEmpty, getNextGameType };
+export { isRoomEmpty, getNextGameType, END_GAME_TYPE };

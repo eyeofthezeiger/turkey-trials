@@ -2,7 +2,11 @@ import { Room, Client } from "colyseus";
 
 import { TurkeyTrialsSessionState } from "../model/game-state";
 import { Player } from "../model/game-player";
-import { getNextGameType, isRoomEmpty } from "../utils/room-helpers";
+import {
+  END_GAME_TYPE,
+  getNextGameType,
+  isRoomEmpty,
+} from "../utils/room-helpers";
 
 interface LobbyOnJoinProps {
   name: string;
@@ -58,7 +62,7 @@ export class GameLobby extends Room<TurkeyTrialsSessionState> {
     this.state.gameType = nextGameType;
 
     this.clock.setTimeout(() => {
-      if (this.state.gameType !== "end") {
+      if (this.state.gameType !== END_GAME_TYPE) {
         this.changeGameType();
       }
     }, 60_000);
