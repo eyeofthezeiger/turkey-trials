@@ -3,6 +3,7 @@ import { Room, Client } from "colyseus";
 import { TurkeyTrialsSessionState } from "../model/game-state";
 import { Player } from "../model/game-player";
 import { isRoomEmpty, RED_LIGHT_GAME_TYPE } from "../utils/room-helpers";
+import { setupTicTacToeMessages } from "../messages/tic-tac-toe";
 
 interface LobbyOnJoinProps {
   name: string;
@@ -28,6 +29,8 @@ export class GameLobby extends Room<TurkeyTrialsSessionState> {
       this.state.gameType = RED_LIGHT_GAME_TYPE;
       // this.changeGameType();
     });
+
+    setupTicTacToeMessages(this);
   }
 
   onJoin(client: Client, { name, color }: LobbyOnJoinProps) {
