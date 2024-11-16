@@ -1,14 +1,19 @@
 {
-    "compilerOptions": {
-      "target": "ES6",
-      "module": "commonjs",
-      "rootDir": ".",
-      "outDir": "dist",
-      "strict": true,
-      "esModuleInterop": true,  // Enable this to allow default imports for CommonJS modules
-      "skipLibCheck": true
-    },
-    "include": ["**/*.ts"],
-    "exclude": ["dist"]
-  }
-  
+  "compilerOptions": {
+    "outDir": "build",
+    "target": "ESNext",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "strict": true,
+    "allowJs": true,
+    "strictNullChecks": false,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "useDefineForClassFields": false
+  },
+  "include": [
+    "**/*.ts"
+  ]
+}

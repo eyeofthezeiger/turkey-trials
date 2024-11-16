@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@colyseus/monitor": "^0.15.8",
     "@colyseus/redis-presence": "^0.15.5",
     "colyseus": "^0.15.17",
     "dotenv": "^16.4.5",
