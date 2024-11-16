@@ -14,4 +14,6 @@ gameServer.define("tic_tac_toe", TicTacToeRoom);
 gameServer.define("red_light_green_light", RedLightGreenLightRoom);
 
 const PORT = 2567;
-httpServer.listen(PORT, () => console.log(`Server running on ws://localhost:${PORT}`));
+httpServer.listen(PORT, () =>
+  console.log(`Server running on ws://localhost:${PORT}`),
+);
