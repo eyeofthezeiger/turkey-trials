@@ -69,6 +69,9 @@ importers:
       '@colyseus/redis-presence':
         specifier: ^0.15.5
         version: 0.15.5
+      '@colyseus/schema':
+        specifier: ^2.0.36
+        version: 2.0.36
       colyseus:
         specifier: ^0.15.17
         version: 0.15.17(@colyseus/schema@2.0.36)(express@4.21.1)
