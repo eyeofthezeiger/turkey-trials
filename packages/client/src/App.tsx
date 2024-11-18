@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useEffect, useState } from "react";
 import { Client, Room } from "colyseus.js";
 import RedLightGreenLight from "./components/RedLightGreenLight";
