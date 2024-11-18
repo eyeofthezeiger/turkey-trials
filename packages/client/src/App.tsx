@@ -21,32 +21,35 @@ const App: React.FC = () => {
   useEffect(() => {
     const joinRoom = async () => {
       console.log("[Client] Attempting to join or create room...");
-      const gameRoom = await client.joinOrCreate("game_room");
-      setRoom(gameRoom);
-      console.log("[Client] Joined room successfully!");
+      try {
+        const gameRoom = await client.joinOrCreate("game_room");
+        setRoom(gameRoom);
+        console.log("[Client] Joined room successfully!");
 
-      // Log initial room state
-      console.log(`[Client] Initial game state: ${gameRoom.state.currentGame}`);
-      console.log("[Client] Listening for updates...");
+        // Log initial room state
+        console.log(`[Client] Initial game state: ${gameRoom.state.currentGame}`);
 
-      // Listen for game state changes
-      gameRoom.onMessage("game_changed", (newGame: GamePageKey) => {
-        console.log(`[Client] Game state changed to: ${newGame}`);
-        setCurrentGame(newGame);
-      });
+        // Listen for game state changes
+        gameRoom.onMessage("game_changed", (newGame: GamePageKey) => {
+          console.log(`[Client] Game state changed to: ${newGame}`);
+          setCurrentGame(newGame);
+        });
 
-      // Listen for player join/leave updates
-      gameRoom.onMessage("player_joined", (data) => {
-        console.log(`[Client] Player joined: ${data.playerId}`);
-        setPlayers((prevPlayers) => [...prevPlayers, data.playerId]);
-      });
+        // Listen for player join/leave updates
+        gameRoom.onMessage("player_joined", (data) => {
+          console.log(`[Client] Player joined: ${data.playerId}`);
+          setPlayers((prevPlayers) => [...prevPlayers, data.playerId]);
+        });
 
-      gameRoom.onMessage("player_left", (data) => {
-        console.log(`[Client] Player left: ${data.playerId}`);
-        setPlayers((prevPlayers) =>
-          prevPlayers.filter((player) => player !== data.playerId)
-        );
-      });
+        gameRoom.onMessage("player_left", (data) => {
+          console.log(`[Client] Player left: ${data.playerId}`);
+          setPlayers((prevPlayers) =>
+            prevPlayers.filter((player) => player !== data.playerId)
+          );
+        });
+      } catch (error) {
+        console.error("[Client] Failed to join or create room:", error);
+      }
     };
 
     joinRoom();
@@ -85,7 +88,9 @@ const App: React.FC = () => {
         </button>
       </nav>
 
-      <main>{PAGES[currentGame]}</main>
+      <main>
+        {PAGES[currentGame] || <h1>Page Not Found</h1>}
+      </main>
 
       <section>
         <h2>Lobby</h2>
