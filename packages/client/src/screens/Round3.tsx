@@ -1,7 +1,7 @@
 // Round3.tsx
 
 import React from "react";
-import SlidingPuzzle from "../components/SlidingPuzzle/SlidingPuzzle";
+import SlidingPuzzle from "../components/SlidingPuzzle";
 
 interface Round3Props {
   onAdvance: () => void;

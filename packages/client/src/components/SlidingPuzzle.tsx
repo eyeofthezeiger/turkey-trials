@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import pet1 from "../../assets/pet1.jpg";
-import pet2 from "../../assets/pet2.jpg";
-import pet3 from "../../assets/pet3.jpg";
-import pet4 from "../../assets/pet4.jpg";
-import pet5 from "../../assets/pet5.jpg";
-import pet6 from "../../assets/pet6.jpg";
-import pet7 from "../../assets/pet7.jpg";
+import pet1 from "../assets/pet1.jpg";
+import pet2 from "../assets/pet2.jpg";
+import pet3 from "../assets/pet3.jpg";
+import pet4 from "../assets/pet4.jpg";
+import pet5 from "../assets/pet5.jpg";
+import pet6 from "../assets/pet6.jpg";
+import pet7 from "../assets/pet7.jpg";
 
 // Map of image names to imports
 const images = {

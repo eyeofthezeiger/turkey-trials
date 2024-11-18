@@ -1,7 +1,7 @@
 // Round2.tsx
 
 import React from "react";
-import GameBoard from "../components/TicTacToe/GameBoard";
+import GameBoard from "../components/TicTacToe";
 
 interface Round2Props {
   onAdvance: () => void;

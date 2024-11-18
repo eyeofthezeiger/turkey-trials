@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Client, Room } from "colyseus.js";
+import RedLightGreenLight from "./components/RedLightGreenLight";
+import SlidingPuzzle from "./components/SlidingPuzzle";
+import TicTacToe from "./components/TicTacToe"; // Import your FinalRound component
+import RockPaperScissors from "./components/RockPaperScissors";
 
-type GamePageKey = "welcome" | "game1" | "game2" | "game3";
-
-const PAGES: Record<GamePageKey, JSX.Element> = {
-  welcome: <h1>Welcome to the Tournament!</h1>,
-  game1: <h1>Game 1</h1>,
-  game2: <h1>Game 2</h1>,
-  game3: <h1>Game 3</h1>,
-};
+type GamePageKey = "welcome" | "game1" | "game2" | "game3" | "final";
 
 const client = new Client("ws://localhost:3000");
 
@@ -71,6 +68,24 @@ const App: React.FC = () => {
     }
   };
 
+  // Dynamically render the current game page
+  const renderCurrentGame = () => {
+    switch (currentGame) {
+      case "welcome":
+        return <h1>Welcome to the tournament</h1>;
+      case "game1":
+        return <RedLightGreenLight />;
+      case "game2":
+        return <TicTacToe />;
+      case "game3":
+        return <SlidingPuzzle />;
+      case "final":
+        return <RockPaperScissors />; // Render the FinalRound component
+      default:
+        return <h1>Page Not Found</h1>;
+    }
+  };
+
   return (
     <div>
       <nav>
@@ -83,14 +98,15 @@ const App: React.FC = () => {
         <button onClick={() => room?.send("change_game", "game3")}>
           Switch to Game 3
         </button>
+        <button onClick={() => room?.send("change_game", "final")}>
+          Go to Final Round
+        </button>
         <button onClick={() => room?.send("change_game", "welcome")}>
           Go to Welcome
         </button>
       </nav>
 
-      <main>
-        {PAGES[currentGame] || <h1>Page Not Found</h1>}
-      </main>
+      <main>{renderCurrentGame()}</main>
 
       <section>
         <h2>Lobby</h2>
