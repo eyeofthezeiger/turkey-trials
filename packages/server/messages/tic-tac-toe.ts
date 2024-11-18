@@ -1,6 +1,6 @@
 import { Client } from "colyseus";
 
-import { GameLobby } from "../room/initialRoom";
+import { GameLobby } from "../room/GameLobby";
 
 const TIC_TAC_TOE_PREFIX = "ticTacToe_" as const;
 

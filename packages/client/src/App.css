@@ -106,11 +106,11 @@ button:hover {
   }
 }
 
-/* Thanksgiving Theme Enhancements */
+/* Adjust Background and Button Styles */
 body {
-  background: linear-gradient(180deg, #8b4513, #ff8c00); /* Warm fall gradient */
-  color: #00e0ff; /* Neon text */
-  font-family: "Press Start 2P", sans-serif; /* Optional retro font */
+  background: radial-gradient(circle, #8b4513 20%, #ff8c00 100%);
+  color: #00e0ff;
+  font-family: "Press Start 2P", sans-serif;
 }
 
 button {
@@ -129,6 +129,7 @@ button {
 button:hover {
   transform: scale(1.1);
 }
+
 
 /* Fall Background with Trees and Leaves */
 

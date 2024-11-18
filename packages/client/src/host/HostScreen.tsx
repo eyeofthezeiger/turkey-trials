@@ -48,7 +48,7 @@
 import React from "react";
 
 interface HostScreenProps {
-  currentRound: number;
+  currentRound: string;
 }
 
 const HostScreen: React.FC<HostScreenProps> = ({ currentRound }) => {

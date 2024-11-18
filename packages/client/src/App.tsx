@@ -1,142 +1,110 @@
-import React, { useState, useEffect } from "react";
-import TVFrame from "./components/TVFrame";
-import "./app.css";
-import HostScreen from "./host/HostScreen";
-import FinalRound from "./screens/FinalRound";
-import Round1 from "./screens/Round1";
-import Round2 from "./screens/Round2";
-import Round3 from "./screens/Round3";
-import StartPage from "./screens/StartPage";
-import backgroundMusic from "./assets/thanksgiving-cheerful-holiday-pop-179004.mp3";
-import { ClientProvider } from "./utils/client";
+import React, { useEffect, useState } from "react";
+import { Client, Room } from "colyseus.js";
+
+type GamePageKey = "welcome" | "game1" | "game2" | "game3";
+
+const PAGES: Record<GamePageKey, JSX.Element> = {
+  welcome: <h1>Welcome to the Tournament!</h1>,
+  game1: <h1>Game 1</h1>,
+  game2: <h1>Game 2</h1>,
+  game3: <h1>Game 3</h1>,
+};
+
+const client = new Client("ws://localhost:3000");
 
 const App: React.FC = () => {
-  const [round, setRound] = useState(0);
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [leafPile, setLeafPile] = useState<string[]>([]);
+  const [currentGame, setCurrentGame] = useState<GamePageKey>("welcome");
+  const [room, setRoom] = useState<Room | null>(null);
+  const [players, setPlayers] = useState<string[]>([]);
+  const [inLobby, setInLobby] = useState<boolean>(false);
 
   useEffect(() => {
-    const bgMusic = new Audio(backgroundMusic);
-    bgMusic.loop = true;
-    bgMusic.volume = 0.5;
-    setAudio(bgMusic);
+    const joinRoom = async () => {
+      console.log("[Client] Attempting to join or create room...");
+      const gameRoom = await client.joinOrCreate("game_room");
+      setRoom(gameRoom);
+      console.log("[Client] Joined room successfully!");
 
-    return () => {
-      bgMusic.pause();
-      bgMusic.currentTime = 0;
+      // Log initial room state
+      console.log(`[Client] Initial game state: ${gameRoom.state.currentGame}`);
+      console.log("[Client] Listening for updates...");
+
+      // Listen for game state changes
+      gameRoom.onMessage("game_changed", (newGame: GamePageKey) => {
+        console.log(`[Client] Game state changed to: ${newGame}`);
+        setCurrentGame(newGame);
+      });
+
+      // Listen for player join/leave updates
+      gameRoom.onMessage("player_joined", (data) => {
+        console.log(`[Client] Player joined: ${data.playerId}`);
+        setPlayers((prevPlayers) => [...prevPlayers, data.playerId]);
+      });
+
+      gameRoom.onMessage("player_left", (data) => {
+        console.log(`[Client] Player left: ${data.playerId}`);
+        setPlayers((prevPlayers) =>
+          prevPlayers.filter((player) => player !== data.playerId)
+        );
+      });
     };
+
+    joinRoom();
   }, []);
 
-  const startMusic = () => {
-    if (audio && audio.paused) {
-      audio.play().catch((error) => console.error("Error playing background music:", error));
+  const handleJoinLobby = () => {
+    if (room) {
+      console.log("[Client] Sending join lobby request...");
+      room.send("join_lobby");
+      setInLobby(true);
     }
   };
 
-  const toggleMute = () => {
-    if (audio) {
-      audio.muted = !audio.muted;
-      setIsMuted(!isMuted);
+  const handleLeaveLobby = () => {
+    if (room) {
+      console.log("[Client] Sending leave lobby request...");
+      room.send("leave_lobby");
+      setInLobby(false);
     }
   };
-
-  // Simulate leaves falling and piling up
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLeafPile((prevPile) => [
-        ...prevPile,
-        `leaf-${Math.floor(Math.random() * 5) + 1}`, // Random leaf type
-      ]);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const advanceRound = () => setRound((prevRound) => prevRound + 1);
 
   return (
-    <ClientProvider>
-      <div className="fall-background">
-        {/* Background Trees and Falling Leaves */}
-        <div className="trees">
-          <div className="tree"></div>
-          <div className="tree"></div>
-          <div className="tree"></div>
-        </div>
-        <div className="falling-leaves">
-          {leafPile.map((leaf, index) => (
-            <div
-              key={index}
-              className={`leaf ${leaf}`}
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDuration: `${3 + Math.random() * 2}s`,
-              }}
-            ></div>
-          ))}
-        </div>
-        <div className="leaf-pile">
-          {leafPile.map((leaf, index) => (
-            <div key={index} className={`leaf-pile-item ${leaf}`}></div>
-          ))}
-        </div>
-        <TVFrame>
-          {/* Static Content */}
-          <div
-            style={{
-              position: "relative",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "100%",
-              width: "100%",
-              color: "#00e0ff",
-              textAlign: "center",
-              zIndex: 10,
-            }}
-            onClick={startMusic}
-          >
-            {/* Mute/Unmute Button */}
-            <div
-              style={{
-                position: "absolute",
-                top: 10,
-                right: 10,
-                zIndex: 15,
-              }}
-            >
-              <button
-                style={{
-                  backgroundColor: "#ff007a",
-                  color: "#fff",
-                  border: "none",
-                  padding: "10px 20px",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                  boxShadow: "0 0 10px #ff007a",
-                }}
-                onClick={toggleMute}
-              >
-                {isMuted ? "Unmute Music" : "Mute Music"}
-              </button>
-            </div>
+    <div>
+      <nav>
+        <button onClick={() => room?.send("change_game", "game1")}>
+          Switch to Game 1
+        </button>
+        <button onClick={() => room?.send("change_game", "game2")}>
+          Switch to Game 2
+        </button>
+        <button onClick={() => room?.send("change_game", "game3")}>
+          Switch to Game 3
+        </button>
+        <button onClick={() => room?.send("change_game", "welcome")}>
+          Go to Welcome
+        </button>
+      </nav>
 
-            {/* Game Rounds */}
-            {round === 0 && <StartPage onStart={() => setRound(1)} />}
-            {round === 1 && <Round1 onAdvance={advanceRound} />}
-            {round === 2 && <Round2 onAdvance={advanceRound} />}
-            {round === 3 && <Round3 onAdvance={advanceRound} />}
-            {round === 4 && <FinalRound onWin={() => setRound(5)} />}
-            {round === 5 && <h1>Congratulations! You've won the tournament!</h1>}
+      <main>{PAGES[currentGame]}</main>
 
-            {/* Host Screen */}
-            <HostScreen currentRound={round} />
-          </div>
-        </TVFrame>
-      </div>
-    </ClientProvider>
+      <section>
+        <h2>Lobby</h2>
+        <div>
+          {inLobby ? (
+            <button onClick={handleLeaveLobby}>Leave Lobby</button>
+          ) : (
+            <button onClick={handleJoinLobby}>Join Lobby</button>
+          )}
+        </div>
+
+        <h3>Players in Lobby:</h3>
+        <ul>
+          {players.map((player, index) => (
+            <li key={index}>{player}</li>
+          ))}
+        </ul>
+      </section>
+    </div>
   );
 };
 

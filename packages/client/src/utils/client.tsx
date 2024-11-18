@@ -13,6 +13,7 @@ const SERVER_URL = "ws://localhost:2567"; // Replace with your Colyseus server U
 interface ClientContextProps {
   room: Room | null;
   connectToRoom: (name: string, color: string) => Promise<void>;
+  sendMessage: (type: string, data?: any) => void; // Add sendMessage function
   connectionStatus: string;
   shouldReconnect: boolean;
 }
@@ -43,6 +44,17 @@ const ClientProvider = ({ children }: PropsWithChildren) => {
     [client],
   );
 
+  const sendMessage = useCallback(
+    (type: string, data?: any) => {
+      if (room) {
+        room.send(type, data);
+      } else {
+        console.warn("No room connected to send message");
+      }
+    },
+    [room],
+  );
+
   useEffect(() => {
     if (room) {
       room.onLeave(() => {
@@ -55,7 +67,13 @@ const ClientProvider = ({ children }: PropsWithChildren) => {
 
   return (
     <ClientContext.Provider
-      value={{ room, connectToRoom, connectionStatus, shouldReconnect }}
+      value={{
+        room,
+        connectToRoom,
+        sendMessage, // Provide sendMessage function in the context
+        connectionStatus,
+        shouldReconnect,
+      }}
     >
       {children}
     </ClientContext.Provider>
@@ -65,10 +83,9 @@ const ClientProvider = ({ children }: PropsWithChildren) => {
 const useClient = () => {
   const client = useContext(ClientContext);
   if (client === null) {
-    throw "not init";
+    throw new Error("Client context not initialized");
   }
-
   return client;
 };
 
-export { ClientProvider, useClient };
+export { ClientProvider, useClient, Room };

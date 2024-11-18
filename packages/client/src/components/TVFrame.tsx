@@ -7,10 +7,7 @@ const TVFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         position: "relative",
         width: "100vw",
         height: "100vh",
-        background: "linear-gradient(180deg, #8b4513, #ff8c00)", // Warm fall gradient
-        backgroundImage: "url('/assets/fall-background.jpg')", // Add a fall-themed background image
-        backgroundSize: "cover",
-        backgroundPosition: "center",
+        background: "linear-gradient(180deg, #8b4513, #ff8c00)",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
@@ -23,8 +20,8 @@ const TVFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           position: "relative",
           width: "80%",
           maxWidth: "1200px",
-          height: "70%",
-          maxHeight: "800px",
+          height: "75%", // Increased height to stretch the top
+          maxHeight: "900px", // Increased max height for larger screens
           margin: "auto",
           border: "10px solid #ff007a",
           borderRadius: "15px",
@@ -45,8 +42,8 @@ const TVFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             left: 0,
             width: "100%",
             height: "100%",
-            pointerEvents: "none", // Ensure it doesn’t block interactions
-            zIndex: 1, // Behind static content
+            pointerEvents: "none",
+            zIndex: 1,
           }}
         />
 
@@ -60,7 +57,7 @@ const TVFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             boxShadow: "0 0 15px #00e0ff, 0 0 30px #00e0ff",
             backgroundColor: "#111",
             position: "relative",
-            zIndex: 5, // Above the scanlines
+            zIndex: 5,
           }}
         >
           {children}
