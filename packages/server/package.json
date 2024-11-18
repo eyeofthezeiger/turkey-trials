@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/express": "^5.0.0",
     "@colyseus/monitor": "^0.15.8",
     "@colyseus/redis-presence": "^0.15.5",
     "@colyseus/schema": "^2.0.36",
