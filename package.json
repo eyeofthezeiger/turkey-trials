@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "pnpm -F server build && pnpm -F client build",
-    "start": "node dist/index.js",
+    "start": "node packages/server/dist/index.js",
     "dev": "concurrently \"pnpm -F client dev\" \"pnpm -F server dev\""
   },
   "keywords": [],
