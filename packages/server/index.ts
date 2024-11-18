@@ -11,12 +11,16 @@ const gameServer = new Server({
   server: httpServer,
 });
 
+// Resolve the absolute path to the client build directory
+const clientDistPath = path.resolve(__dirname, "../../client/dist");
+console.log("Resolved clientDistPath:", clientDistPath);
+
 // Serve React client build files
-app.use(express.static(path.join(__dirname, "../../../packages/client/dist")));
+app.use(express.static(clientDistPath));
 
 // Catch-all route to serve React's index.html for SPA routing
 app.get("*", (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, "../../../packages/client/dist", "index.html"));
+  res.sendFile(path.join(clientDistPath, "index.html"));
 });
 
 gameServer.define("game_room", GameRoom);

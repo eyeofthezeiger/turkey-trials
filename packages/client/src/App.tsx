@@ -10,8 +10,8 @@ type GamePageKey = "welcome" | "game1" | "game2" | "game3" | "final";
 
 const serverUrl =
   process.env.NODE_ENV === "production"
-    ? "wss://your-app.onrender.com" // Replace with your actual Render URL
-    : "ws://localhost:10000";
+    ? "wss://turkey-trials.onrender.com" // Replace with your actual Render URL
+    : "ws://localhost:3000";
 
 const client = new Client(serverUrl);
 
