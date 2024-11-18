@@ -5,7 +5,7 @@ import path from "path";
 import { GameRoom } from "./room/GameRoom";
 
 const app = express();
-const port = process.env.PORT || 3000; // Use Render's dynamic port or default to 3000
+const port = process.env.PORT || 3000;
 const httpServer = createServer(app);
 const gameServer = new Server({
   server: httpServer,

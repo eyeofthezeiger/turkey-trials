@@ -3,12 +3,17 @@ import React, { useEffect, useState } from "react";
 import { Client, Room } from "colyseus.js";
 import RedLightGreenLight from "./components/RedLightGreenLight";
 import SlidingPuzzle from "./components/SlidingPuzzle";
-import TicTacToe from "./components/TicTacToe"; // Import your FinalRound component
+import TicTacToe from "./components/TicTacToe";
 import RockPaperScissors from "./components/RockPaperScissors";
 
 type GamePageKey = "welcome" | "game1" | "game2" | "game3" | "final";
 
-const client = new Client("ws://localhost:3000");
+const serverUrl =
+  process.env.NODE_ENV === "production"
+    ? "wss://your-app.onrender.com" // Replace with your actual Render URL
+    : "ws://localhost:10000";
+
+const client = new Client(serverUrl);
 
 const App: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GamePageKey>("welcome");
@@ -69,7 +74,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Dynamically render the current game page
   const renderCurrentGame = () => {
     switch (currentGame) {
       case "welcome":
@@ -81,7 +85,7 @@ const App: React.FC = () => {
       case "game3":
         return <SlidingPuzzle />;
       case "final":
-        return <RockPaperScissors />; // Render the FinalRound component
+        return <RockPaperScissors />;
       default:
         return <h1>Page Not Found</h1>;
     }
