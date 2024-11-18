@@ -1,6 +1,6 @@
 import { Server } from "colyseus";
 import { createServer } from "http";
-import express from "express";
+import express, { Request, Response } from "express";
 import path from "path";
 import { GameRoom } from "./room/GameRoom";
 
@@ -15,7 +15,7 @@ const gameServer = new Server({
 app.use(express.static(path.join(__dirname, "../../../packages/client/dist")));
 
 // Catch-all route to serve React's index.html for SPA routing
-app.get("*", (req, res) => {
+app.get("*", (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, "../../../packages/client/dist", "index.html"));
 });
 
