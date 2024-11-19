@@ -1,9 +1,11 @@
 import { Room, Client } from "colyseus";
-import { Schema, type, MapSchema } from "@colyseus/schema";
+import { Schema, type, MapSchema, ArraySchema } from "@colyseus/schema";
 
 class Player extends Schema {
   @type("number") position: number = 0; // Player's position on the track
   @type("string") id: string; // Player ID
+  @type("number") puzzlesCompleted: number = 0; // Number of puzzles completed
+  @type(["number"]) puzzleTimes: ArraySchema<number> = new ArraySchema<number>(); // Times for completed puzzles
 
   constructor(id: string) {
     super();
@@ -12,14 +14,18 @@ class Player extends Schema {
 }
 
 class GameState extends Schema {
-  @type("string") currentGame: string = "welcome";
-  @type({ map: Player }) players: MapSchema<Player> = new MapSchema<Player>();
-  @type("string") light: string = "Red"; // Red or Green Light
-  @type("number") finishLine: number = 500; // Finish line position
+  @type("string") currentGame: string = "welcome"; // Current game state
+  @type({ map: Player }) players: MapSchema<Player> = new MapSchema<Player>(); // Players in the game
+  @type("string") light: string = "Red"; // Red or Green Light for RLGL
+  @type("number") finishLine: number = 500; // Finish line for RLGL
+  @type("string") currentImage: string = ""; // Current sliding puzzle image
+  @type("number") remainingTime: number = 300000; // 5 minutes in milliseconds
+  @type("boolean") timerRunning: boolean = false; // Whether the game timer is running
 }
 
 export class GameRoom extends Room<GameState> {
   private lightInterval: NodeJS.Timeout | null = null;
+  private gameTimer: NodeJS.Timeout | null = null;
 
   onCreate() {
     this.setState(new GameState());
@@ -33,8 +39,10 @@ export class GameRoom extends Room<GameState> {
 
       if (newGame === "game1") {
         this.startRedLightGreenLight();
+      } else if (newGame === "game3") {
+        this.startSlidingPuzzle();
       } else {
-        this.stopRedLightGreenLight();
+        this.stopAllTimers();
       }
     });
 
@@ -55,7 +63,29 @@ export class GameRoom extends Room<GameState> {
       this.broadcast("player_update", { id: client.sessionId, position: player.position });
     });
 
-    // Handle player joining lobby
+    // Handle puzzle completion for Sliding Puzzle
+    this.onMessage("complete_puzzle", (client, puzzleTime: number) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player) return;
+
+      player.puzzlesCompleted += 1;
+      player.puzzleTimes.push(puzzleTime);
+
+      console.log(
+        `[Server] Player ${client.sessionId} completed a puzzle. Total completed: ${player.puzzlesCompleted}`
+      );
+
+      // Assign a new puzzle image
+      this.assignNewPuzzle();
+      this.broadcast("puzzle_completed", {
+        playerId: client.sessionId,
+        puzzlesCompleted: player.puzzlesCompleted,
+        puzzleTimes: player.puzzleTimes,
+        newImage: this.state.currentImage,
+      });
+    });
+
+    // Handle player joining the lobby
     this.onMessage("join_lobby", (client) => {
       console.log(`[Server] Client ${client.sessionId} requested to join the lobby.`);
       if (!this.state.players.has(client.sessionId)) {
@@ -66,7 +96,7 @@ export class GameRoom extends Room<GameState> {
       this.logPlayers();
     });
 
-    // Handle player leaving lobby
+    // Handle player leaving the lobby
     this.onMessage("leave_lobby", (client) => {
       console.log(`[Server] Client ${client.sessionId} requested to leave the lobby.`);
       if (this.state.players.has(client.sessionId)) {
@@ -84,13 +114,13 @@ export class GameRoom extends Room<GameState> {
     this.lightInterval = setInterval(() => this.toggleLight(), Math.random() * 3000 + 2000); // Random interval
   }
 
-  stopRedLightGreenLight() {
-    console.log("[Server] Stopping Red Light, Green Light...");
-    if (this.lightInterval) {
-      clearInterval(this.lightInterval);
-      this.lightInterval = null;
-    }
-    this.state.light = "Red"; // Reset light
+  stopAllTimers() {
+    if (this.lightInterval) clearInterval(this.lightInterval);
+    if (this.gameTimer) clearInterval(this.gameTimer);
+
+    this.lightInterval = null;
+    this.gameTimer = null;
+    this.state.timerRunning = false;
   }
 
   toggleLight() {
@@ -103,8 +133,38 @@ export class GameRoom extends Room<GameState> {
     if (player.position >= this.state.finishLine) {
       console.log(`[Server] Player ${client.sessionId} reached the finish line!`);
       this.broadcast("game_over", { winner: client.sessionId });
-      this.stopRedLightGreenLight();
+      this.stopAllTimers();
     }
+  }
+
+  startSlidingPuzzle() {
+    console.log("[Server] Starting Sliding Puzzle...");
+    this.assignNewPuzzle();
+    this.startGameTimer();
+  }
+
+  assignNewPuzzle() {
+    const images = ["pet1", "pet2", "pet3", "pet4", "pet5", "pet6", "pet7"];
+    this.state.currentImage = images[Math.floor(Math.random() * images.length)];
+    console.log(`[Server] Assigned new puzzle image: ${this.state.currentImage}`);
+    this.broadcast("new_puzzle", { image: this.state.currentImage });
+  }
+
+  startGameTimer() {
+    this.state.timerRunning = true;
+    this.state.remainingTime = 300000; // Reset to 5 minutes
+
+    this.gameTimer = setInterval(() => {
+      this.state.remainingTime -= 1000;
+
+      if (this.state.remainingTime <= 0) {
+        console.log("[Server] Time's up!");
+        this.stopAllTimers();
+        this.broadcast("game_over");
+      } else {
+        this.broadcast("timer_update", { remainingTime: this.state.remainingTime });
+      }
+    }, 1000);
   }
 
   onJoin(client: Client) {
@@ -126,6 +186,6 @@ export class GameRoom extends Room<GameState> {
 
   onDispose() {
     console.log("[Server] Room disposed.");
-    this.stopRedLightGreenLight();
+    this.stopAllTimers();
   }
 }

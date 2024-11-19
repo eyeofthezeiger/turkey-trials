@@ -83,7 +83,7 @@ const App: React.FC = () => {
       case "game2":
         return <TicTacToe />;
       case "game3":
-        return <SlidingPuzzle />;
+        return <SlidingPuzzle room={room!}/>;
       case "final":
         return <RockPaperScissors />;
       default:
