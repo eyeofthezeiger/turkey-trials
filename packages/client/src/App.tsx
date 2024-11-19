@@ -81,7 +81,7 @@ const App: React.FC = () => {
       case "game1":
         return <RedLightGreenLight room={room!}/>;
       case "game2":
-        return <TicTacToe />;
+        return <TicTacToe room={room!}/>;
       case "game3":
         return <SlidingPuzzle room={room!}/>;
       case "final":

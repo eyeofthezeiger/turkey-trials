@@ -1,93 +1,144 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Room } from "colyseus.js";
 
-const TicTacToe: React.FC = () => {
+interface Props {
+  room: Room;
+}
+
+const TicTacToe: React.FC<Props> = ({ room }) => {
   const [board, setBoard] = useState<string[]>(Array(9).fill(""));
   const [currentTurn, setCurrentTurn] = useState<"X" | "O">("X");
   const [winner, setWinner] = useState<string | null>(null);
+  const [isWaiting, setIsWaiting] = useState<boolean>(false);
+  const [playerMark, setPlayerMark] = useState<"X" | "O" | null>(null); // Player's mark
+  const [opponent, setOpponent] = useState<string | null>(null); // Opponent's session ID
 
-  // Function to check for a winner
-  const checkWinner = (board: string[]): string | null => {
-    const winningCombinations = [
-      [0, 1, 2],
-      [3, 4, 5],
-      [6, 7, 8],
-      [0, 3, 6],
-      [1, 4, 7],
-      [2, 5, 8],
-      [0, 4, 8],
-      [2, 4, 6],
-    ];
-
-    for (const [a, b, c] of winningCombinations) {
-      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-        return board[a]; // Return the winner (X or O)
-      }
+  useEffect(() => {
+    if (!room) {
+      console.error("[Client] Room is not available.");
+      return;
     }
 
-    return board.includes("") ? null : "draw"; // Return "draw" if board is full and no winner
-  };
+    // Listen for server updates
+    room.onMessage("tic_tac_toe_started", (data) => {
+      console.log("[Client] Game started:", data);
+      setBoard(Array(9).fill(""));
+      setWinner(null);
+      setIsWaiting(false);
 
-  // Handle cell click
-  const handleCellClick = (index: number) => {
-    if (board[index] === "" && !winner) {
-      const newBoard = [...board];
-      newBoard[index] = currentTurn;
-      setBoard(newBoard);
-
-      const gameWinner = checkWinner(newBoard);
-      if (gameWinner) {
-        setWinner(gameWinner);
+      // Set player marks and opponent
+      const { playerX, playerO } = data;
+      if (room.sessionId === playerX) {
+        setPlayerMark("X");
+        setOpponent(playerO);
       } else {
-        setCurrentTurn((prev) => (prev === "X" ? "O" : "X"));
+        setPlayerMark("O");
+        setOpponent(playerX);
       }
+      setCurrentTurn("X"); // X always starts
+    });
+
+    room.onMessage("move_made", (data) => {
+      console.log("[Client] Move made:", data);
+      setBoard(data.board);
+      setCurrentTurn(data.currentTurn);
+
+      if (data.winner) {
+        setWinner(data.winner);
+        console.log(`[Client] Game Over! Winner: ${data.winner}`);
+      }
+    });
+
+    room.onMessage("game_completed", (data) => {
+      console.log("[Client] Game completed:", data);
+      setWinner(data.winner);
+    });
+
+    room.onMessage("waiting_for_match", () => {
+      console.log("[Client] Waiting for match...");
+      setIsWaiting(true);
+    });
+
+    return () => {
+      room.removeAllListeners();
+    };
+  }, [room]);
+
+  const handleCellClick = (index: number) => {
+    if (board[index] === "" && !winner && currentTurn === playerMark) {
+      console.log(`[Client] Making move at index: ${index}`);
+      room.send("move", { index });
     }
   };
 
-  // Reset the game
-  const resetGame = () => {
-    setBoard(Array(9).fill(""));
-    setCurrentTurn("X");
-    setWinner(null);
-  };
+  const renderCell = (cell: string, index: number) => (
+    <div
+      key={index}
+      onClick={() => handleCellClick(index)}
+      style={{
+        width: "100px",
+        height: "100px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: "2px solid black",
+        fontSize: "3em",
+        cursor: cell === "" && currentTurn === playerMark && !winner ? "pointer" : "default",
+        backgroundColor: cell === "" ? "#f9f9f9" : "#eaeaea",
+      }}
+    >
+      <span style={{ color: "black" }}>{cell}</span>
+    </div>
+  );
+
+  if (isWaiting) {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <h1>Tic Tac Toe</h1>
+        <h2>Waiting for another player...</h2>
+      </div>
+    );
+  }
 
   return (
     <div style={{ textAlign: "center" }}>
       <h1>Tic Tac Toe</h1>
+      {opponent && <h2>Opponent: {opponent}</h2>}
       {winner ? (
-        <h2>{winner === "draw" ? "It's a draw!" : `${winner} wins!`}</h2>
+        <h2>
+          {winner === "draw" ? "It's a draw!" : `${winner} wins!`}
+        </h2>
       ) : (
-        <h2>Turn: {currentTurn}</h2>
+        <h2>
+          {currentTurn === playerMark
+            ? "Your Turn"
+            : `${opponent ? "Opponent's Turn" : "Waiting for Opponent..."}`}
+        </h2>
       )}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, 100px)",
-          gap: "10px",
+          gap: "5px",
           margin: "20px auto",
         }}
       >
-        {board.map((cell, index) => (
-          <div
-            key={index}
-            onClick={() => handleCellClick(index)}
-            style={{
-              width: "100px",
-              height: "100px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "1px solid #000",
-              fontSize: "2em",
-              cursor: cell === "" && !winner ? "pointer" : "default",
-              backgroundColor: cell === "" ? "#fff" : "#f0f0f0",
-            }}
-          >
-            {cell}
-          </div>
-        ))}
+        {board.map((cell, index) => renderCell(cell, index))}
       </div>
       {winner && (
-        <button onClick={resetGame} style={{ marginTop: "20px", padding: "10px 20px" }}>
+        <button
+          onClick={() => room.send("reset_game")}
+          style={{
+            marginTop: "20px",
+            padding: "10px 20px",
+            backgroundColor: "black",
+            color: "white",
+            fontSize: "1.2em",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+        >
           Play Again
         </button>
       )}

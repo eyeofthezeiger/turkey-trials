@@ -6,11 +6,21 @@ class Player extends Schema {
   @type("string") id: string; // Player ID
   @type("number") puzzlesCompleted: number = 0; // Number of puzzles completed
   @type(["number"]) puzzleTimes: ArraySchema<number> = new ArraySchema<number>(); // Times for completed puzzles
+  @type("boolean") inGame: boolean = false; // Is the player currently in a game
+  @type("boolean") waiting: boolean = false; // Is the player waiting for a match
 
   constructor(id: string) {
     super();
     this.id = id;
   }
+}
+
+class TicTacToeGame extends Schema {
+  @type(["string"]) board: ArraySchema<string> = new ArraySchema(...Array(9).fill(""));
+  @type("string") currentTurn: string = "X";
+  @type("string") playerX: string = "";
+  @type("string") playerO: string = "";
+  @type("boolean") completed: boolean = false;
 }
 
 class GameState extends Schema {
@@ -21,6 +31,7 @@ class GameState extends Schema {
   @type("string") currentImage: string = ""; // Current sliding puzzle image
   @type("number") remainingTime: number = 300000; // 5 minutes in milliseconds
   @type("boolean") timerRunning: boolean = false; // Whether the game timer is running
+  @type([TicTacToeGame]) ticTacToeGames: ArraySchema<TicTacToeGame> = new ArraySchema<TicTacToeGame>();
 }
 
 export class GameRoom extends Room<GameState> {
@@ -39,10 +50,82 @@ export class GameRoom extends Room<GameState> {
 
       if (newGame === "game1") {
         this.startRedLightGreenLight();
+      } else if (newGame === "game2") {
+        this.startTicTacToe();
       } else if (newGame === "game3") {
         this.startSlidingPuzzle();
       } else {
         this.stopAllTimers();
+      }
+    });
+
+    // Handle player joining the lobby
+    this.onMessage("join_lobby", (client) => {
+      console.log(`[Server] Client ${client.sessionId} requested to join the lobby.`);
+      if (!this.state.players.has(client.sessionId)) {
+        this.state.players.set(client.sessionId, new Player(client.sessionId));
+        console.log(`[Server] Client ${client.sessionId} added to lobby.`);
+        this.broadcast("player_joined", { playerId: client.sessionId });
+        if (this.state.currentGame === "game2") {
+          this.matchPlayersForTicTacToe();
+        }
+      }
+      this.logPlayers();
+    });
+
+    // Handle Tic Tac Toe moves
+    this.onMessage("move", (client, { index }: { index: number }) => {
+      const game = this.state.ticTacToeGames.find(
+        (g) => g.playerX === client.sessionId || g.playerO === client.sessionId
+      );
+
+      if (!game || game.completed) return;
+
+      console.log('move')
+
+      const isPlayerX = game.playerX === client.sessionId;
+      if ((game.currentTurn === "X" && isPlayerX) || (game.currentTurn === "O" && !isPlayerX)) {
+        if (game.board[index] === "") {
+          game.board[index] = game.currentTurn;
+          console.log(`[Server] Move made by ${client.sessionId} at index ${index}`);
+
+          const winner = this.checkWinner(game.board);
+          if (winner) {
+            game.completed = true;
+            console.log(`[Server] Game completed! Winner: ${winner}`);
+            this.broadcast("game_completed", { winner });
+          } else if (!game.board.includes("")) {
+            game.completed = true;
+            console.log(`[Server] Game completed! It's a draw.`);
+            this.broadcast("game_completed", { winner: "draw" });
+          } else {
+            game.currentTurn = game.currentTurn === "X" ? "O" : "X";
+            console.log(`[Server] Turn changed to: ${game.currentTurn}`);
+          }
+
+          this.broadcast("move_made", {
+            board: game.board.toArray(),
+            currentTurn: game.currentTurn,
+            winner: game.completed ? winner || "draw" : null,
+          });
+        }
+      }
+    });
+
+    // Reset game
+    this.onMessage("reset_game", (client) => {
+      const game = this.state.ticTacToeGames.find(
+        (g) => g.playerX === client.sessionId || g.playerO === client.sessionId
+      );
+      if (game) {
+        game.board = new ArraySchema(...Array(9).fill(""));
+        game.currentTurn = "X";
+        game.completed = false;
+        console.log(`[Server] Game reset by ${client.sessionId}`);
+        this.broadcast("tic_tac_toe_started", {
+          playerX: game.playerX,
+          playerO: game.playerO,
+        });
       }
     });
 
@@ -84,28 +167,6 @@ export class GameRoom extends Room<GameState> {
         newImage: this.state.currentImage,
       });
     });
-
-    // Handle player joining the lobby
-    this.onMessage("join_lobby", (client) => {
-      console.log(`[Server] Client ${client.sessionId} requested to join the lobby.`);
-      if (!this.state.players.has(client.sessionId)) {
-        this.state.players.set(client.sessionId, new Player(client.sessionId));
-        console.log(`[Server] Client ${client.sessionId} added to lobby.`);
-        this.broadcast("player_joined", { playerId: client.sessionId });
-      }
-      this.logPlayers();
-    });
-
-    // Handle player leaving the lobby
-    this.onMessage("leave_lobby", (client) => {
-      console.log(`[Server] Client ${client.sessionId} requested to leave the lobby.`);
-      if (this.state.players.has(client.sessionId)) {
-        this.state.players.delete(client.sessionId);
-        console.log(`[Server] Client ${client.sessionId} removed from lobby.`);
-        this.broadcast("player_left", { playerId: client.sessionId });
-      }
-      this.logPlayers();
-    });
   }
 
   startRedLightGreenLight() {
@@ -114,33 +175,75 @@ export class GameRoom extends Room<GameState> {
     this.lightInterval = setInterval(() => this.toggleLight(), Math.random() * 3000 + 2000); // Random interval
   }
 
-  stopAllTimers() {
-    if (this.lightInterval) clearInterval(this.lightInterval);
-    if (this.gameTimer) clearInterval(this.gameTimer);
-
-    this.lightInterval = null;
-    this.gameTimer = null;
-    this.state.timerRunning = false;
-  }
-
-  toggleLight() {
-    this.state.light = this.state.light === "Red" ? "Green" : "Red";
-    console.log(`[Server] Light toggled to: ${this.state.light}`);
-    this.broadcast("light_update", { light: this.state.light });
-  }
-
-  checkFinishLine(client: Client, player: Player) {
-    if (player.position >= this.state.finishLine) {
-      console.log(`[Server] Player ${client.sessionId} reached the finish line!`);
-      this.broadcast("game_over", { winner: client.sessionId });
-      this.stopAllTimers();
-    }
+  startTicTacToe() {
+    console.log("[Server] Starting Tic Tac Toe...");
+    this.matchPlayersForTicTacToe();
   }
 
   startSlidingPuzzle() {
     console.log("[Server] Starting Sliding Puzzle...");
     this.assignNewPuzzle();
     this.startGameTimer();
+  }
+
+  matchPlayersForTicTacToe() {
+    const waitingPlayers = Array.from(this.state.players.values()).filter((p) => !p.inGame && !p.waiting);
+
+    while (waitingPlayers.length >= 2) {
+      const playerX = waitingPlayers.pop();
+      const playerO = waitingPlayers.pop();
+      if (playerX && playerO) {
+        this.startTicTacToeGame(playerX, playerO);
+      }
+    }
+
+    if (waitingPlayers.length === 1) {
+      const unmatchedPlayer = waitingPlayers[0];
+      unmatchedPlayer.waiting = true;
+      this.broadcast("waiting_for_match", {}, {});
+    }
+  }
+
+  startTicTacToeGame(playerX: Player, playerO: Player) {
+    playerX.inGame = true;
+    playerO.inGame = true;
+
+    const game = new TicTacToeGame();
+    game.playerX = playerX.id;
+    game.playerO = playerO.id;
+
+    this.state.ticTacToeGames.push(game);
+    console.log(`[Server] New Tic Tac Toe game started: X=${playerX.id}, O=${playerO.id}`);
+    this.broadcast("tic_tac_toe_started", {
+      playerX: playerX.id,
+      playerO: playerO.id,
+    });
+  }
+
+  checkWinner(board: ArraySchema<string>): string | null {
+    const winningCombinations = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
+    ];
+
+    for (const [a, b, c] of winningCombinations) {
+      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+        return board[a]; // Return "X" or "O"
+      }
+    }
+    return null;
+  }
+
+  toggleLight() {
+    this.state.light = this.state.light === "Red" ? "Green" : "Red";
+    console.log(`[Server] Light toggled to: ${this.state.light}`);
+    this.broadcast("light_update", { light: this.state.light });
   }
 
   assignNewPuzzle() {
@@ -167,6 +270,23 @@ export class GameRoom extends Room<GameState> {
     }, 1000);
   }
 
+  stopAllTimers() {
+    if (this.lightInterval) clearInterval(this.lightInterval);
+    if (this.gameTimer) clearInterval(this.gameTimer);
+
+    this.lightInterval = null;
+    this.gameTimer = null;
+    this.state.timerRunning = false;
+  }
+
+  checkFinishLine(client: Client, player: Player) {
+    if (player.position >= this.state.finishLine) {
+      console.log(`[Server] Player ${client.sessionId} reached the finish line!`);
+      this.broadcast("game_over", { winner: client.sessionId });
+      this.stopAllTimers();
+    }
+  }
+
   onJoin(client: Client) {
     console.log(`[Server] Client ${client.sessionId} joined the room.`);
   }
@@ -174,7 +294,13 @@ export class GameRoom extends Room<GameState> {
   onLeave(client: Client) {
     console.log(`[Server] Client ${client.sessionId} left the room.`);
     if (this.state.players.has(client.sessionId)) {
+      const player = this.state.players.get(client.sessionId);
+      player.inGame = false;
+      player.waiting = false;
       this.state.players.delete(client.sessionId);
+      if (this.state.currentGame === "game2") {
+        this.matchPlayersForTicTacToe();
+      }
       this.broadcast("player_left", { playerId: client.sessionId });
     }
     this.logPlayers();
