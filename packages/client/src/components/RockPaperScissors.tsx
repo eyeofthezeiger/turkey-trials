@@ -1,122 +1,91 @@
 import React, { useState, useEffect } from "react";
+import { Room } from "colyseus.js";
 
-type Move = "rock" | "paper" | "scissors" | null;
-
-interface RPSGameState {
-  player1Move: Move;
-  player2Move: Move;
-  winner: string | null;
-  gameInProgress: boolean;
+interface Props {
+  room: Room;
 }
 
-const RockPaperScissors: React.FC = () => {
-  const [gameState, setGameState] = useState<RPSGameState>({
-    player1Move: null,
-    player2Move: null,
-    winner: null,
-    gameInProgress: true,
-  });
+const RockPaperScissors: React.FC<Props> = ({ room }) => {
   const [playerNumber, setPlayerNumber] = useState<1 | 2 | null>(null);
-
-  // Assign player number (Player 1 or 2) on initial render
-  const assignPlayer = () => {
-    if (!playerNumber) {
-      const assignedPlayer = Math.random() > 0.5 ? 1 : 2;
-      setPlayerNumber(assignedPlayer);
-    }
-  };
-
-  // Determine winner
-  const determineWinner = (player1Move: Move, player2Move: Move): string | null => {
-    if (!player1Move || !player2Move) return null;
-
-    if (player1Move === player2Move) return "draw";
-    if (
-      (player1Move === "rock" && player2Move === "scissors") ||
-      (player1Move === "paper" && player2Move === "rock") ||
-      (player1Move === "scissors" && player2Move === "paper")
-    ) {
-      return "Player 1";
-    }
-    return "Player 2";
-  };
-
-  const makeMove = (move: Move) => {
-    if (!gameState.gameInProgress || !playerNumber) return;
-
-    setGameState((prevState) => {
-      const newState = { ...prevState };
-      if (playerNumber === 1) {
-        newState.player1Move = move;
-      } else {
-        newState.player2Move = move;
-      }
-
-      if (newState.player1Move && newState.player2Move) {
-        newState.winner = determineWinner(newState.player1Move, newState.player2Move);
-        newState.gameInProgress = false;
-      }
-
-      return newState;
-    });
-  };
-
-  const resetGame = () => {
-    setGameState({
-      player1Move: null,
-      player2Move: null,
-      winner: null,
-      gameInProgress: true,
-    });
-    setPlayerNumber(null); // Optionally reset player assignment
-  };
+  const [opponent, setOpponent] = useState<string | null>(null);
+  const [playerMove, setPlayerMove] = useState<string | null>(null);
+  const [opponentMove, setOpponentMove] = useState<string | null>(null);
+  const [winner, setWinner] = useState<string | null>(null);
+  const [isWaiting, setIsWaiting] = useState<boolean>(true);
 
   useEffect(() => {
-    assignPlayer();
-  }, []);
+    room.onMessage("rps_started", (data) => {
+      const { player1, player2 } = data;
+      if (room.sessionId === player1) {
+        setPlayerNumber(1);
+        setOpponent(player2);
+      } else {
+        setPlayerNumber(2);
+        setOpponent(player1);
+      }
+      setIsWaiting(false);
+      console.log("[Client] RPS game started.");
+    });
+
+    room.onMessage("rps_move_made", (data) => {
+      const { player1Move, player2Move } = data;
+      setPlayerMove(player1Move || null);
+      setOpponentMove(player2Move || null);
+      console.log("[Client] Move updated.");
+    });
+
+    room.onMessage("rps_completed", (data) => {
+      const { winner } = data;
+      setWinner(winner);
+      console.log("[Client] Game completed. Winner:", winner);
+    });
+
+    room.onMessage("waiting_for_match", () => {
+      console.log("[Client] Waiting for opponent...");
+      setIsWaiting(true);
+    });
+
+    return () => {
+      room.removeAllListeners();
+    };
+  }, [room]);
+
+  const makeMove = (move: "rock" | "paper" | "scissors") => {
+    if (!winner && !playerMove) {
+      setPlayerMove(move);
+      room.send("rps_move", move);
+      console.log(`[Client] Sent move: ${move}`);
+    }
+  };
+
+  if (isWaiting) {
+    return <h2>Waiting for an opponent...</h2>;
+  }
 
   return (
     <div style={{ textAlign: "center" }}>
       <h1>Rock Paper Scissors</h1>
-      {playerNumber && <h2>You are Player {playerNumber}</h2>}
-      {gameState.winner ? (
-        <h2>
-          {gameState.winner === "draw"
-            ? "It's a draw!"
-            : `${gameState.winner} wins!`}
-        </h2>
+      {opponent && <h2>Opponent: {opponent}</h2>}
+      {winner ? (
+        <h2>{winner === "draw" ? "It's a draw!" : `${winner} wins!`}</h2>
       ) : (
-        <h2>Game in Progress</h2>
+        <h2>Game in progress...</h2>
       )}
       <div>
-        <button
-          onClick={() => makeMove("rock")}
-          disabled={!gameState.gameInProgress || !playerNumber}
-        >
+        <button onClick={() => makeMove("rock")} disabled={!!playerMove}>
           Rock
         </button>
-        <button
-          onClick={() => makeMove("paper")}
-          disabled={!gameState.gameInProgress || !playerNumber}
-        >
+        <button onClick={() => makeMove("paper")} disabled={!!playerMove}>
           Paper
         </button>
-        <button
-          onClick={() => makeMove("scissors")}
-          disabled={!gameState.gameInProgress || !playerNumber}
-        >
+        <button onClick={() => makeMove("scissors")} disabled={!!playerMove}>
           Scissors
         </button>
       </div>
       <div>
-        <p>Player 1 Move: {gameState.player1Move || "Waiting..."}</p>
-        <p>Player 2 Move: {gameState.player2Move || "Waiting..."}</p>
+        <p>Your Move: {playerMove || "Waiting..."}</p>
+        <p>Opponent's Move: {opponentMove || "Waiting..."}</p>
       </div>
-      {gameState.winner && (
-        <button onClick={resetGame} style={{ marginTop: "20px" }}>
-          Play Again
-        </button>
-      )}
     </div>
   );
 };

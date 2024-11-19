@@ -85,7 +85,7 @@ const App: React.FC = () => {
       case "game3":
         return <SlidingPuzzle room={room!}/>;
       case "final":
-        return <RockPaperScissors />;
+        return <RockPaperScissors room={room!}/>;
       default:
         return <h1>Page Not Found</h1>;
     }
