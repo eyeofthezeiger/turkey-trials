@@ -34,6 +34,7 @@ const SlidingPuzzle: React.FC<Props> = ({ room }) => {
   const [timer, setTimer] = useState<number>(300000); // 5 minutes in milliseconds
   const [completedPuzzles, setCompletedPuzzles] = useState<number>(0);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
+  const [playerPoints, setPlayerPoints] = useState<number>(0);
 
   useEffect(() => {
     if (!room) {
@@ -60,13 +61,26 @@ const SlidingPuzzle: React.FC<Props> = ({ room }) => {
 
     room.onMessage("puzzle_completed", (data) => {
       console.log(`[Client] Puzzle completed by ${data.playerId}`);
-      setCompletedPuzzles(data.puzzlesCompleted);
+      if (data.playerId === room.sessionId) {
+        setCompletedPuzzles(data.puzzlesCompleted);
+      }
     });
 
     room.onMessage("game_over", () => {
       console.log("[Client] Game over");
       setIsGameOver(true);
     });
+
+    // Listen for points updates
+    room.onMessage("points_update", (data) => {
+      const points = data.points[room.sessionId];
+      if (points !== undefined) {
+        setPlayerPoints(points);
+      }
+    });
+
+    // Request initial points
+    room.send("request_points");
 
     return () => {
       room.removeAllListeners();
@@ -170,12 +184,19 @@ const SlidingPuzzle: React.FC<Props> = ({ room }) => {
   };
 
   if (isGameOver) {
-    return <h1>Game Over! You completed {completedPuzzles} puzzles.</h1>;
+    return (
+      <div style={{ textAlign: "center" }}>
+        <h1>Game Over!</h1>
+        <h2>You completed {completedPuzzles} puzzles.</h2>
+        <h3>Your Points: {playerPoints}</h3>
+      </div>
+    );
   }
 
   return (
     <div style={{ textAlign: "center" }}>
       <h1>Sliding Puzzle</h1>
+      <h3>Your Points: {playerPoints}</h3>
       <p>Time Remaining: {Math.ceil(timer / 1000)} seconds</p>
       <p>Puzzles Completed: {completedPuzzles}</p>
       {puzzleImage ? (

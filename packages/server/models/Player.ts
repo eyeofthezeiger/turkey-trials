@@ -9,6 +9,7 @@ export class Player extends Schema {
   @type(["number"]) puzzleTimes: ArraySchema<number> = new ArraySchema<number>(); // Times for completed puzzles
   @type("boolean") inGame: boolean = false; // Is the player currently in a game
   @type("boolean") waiting: boolean = false; // Is the player waiting for a match
+  @type("number") points: number = 0; // Player's total points
 
   constructor(id: string) {
     super();

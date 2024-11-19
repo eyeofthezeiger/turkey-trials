@@ -11,6 +11,7 @@ const RedLightGreenLight: React.FC<Props> = ({ room }) => {
   const [light, setLight] = useState("Red");
   const [players, setPlayers] = useState<{ id: string; position: number }[]>([]);
   const [gameOver, setGameOver] = useState(false);
+  const [playerPoints, setPlayerPoints] = useState<number>(0);
 
   useEffect(() => {
     // Listen for state changes from the server
@@ -38,11 +39,26 @@ const RedLightGreenLight: React.FC<Props> = ({ room }) => {
       setPlayers((prev) => prev.filter((player) => player.id !== data.playerId));
     });
 
-    room.onMessage("game_over", (data) => {
-      console.log("[Client] Game over. Winner:", data.winner);
-      alert(`Player ${data.winner} won the game!`);
+    room.onMessage("player_finished", (data) => {
+      console.log(`[Client] Player ${data.playerId} finished in position ${data.position}`);
+    });
+
+    room.onMessage("game_over", () => {
+      console.log("[Client] Game over.");
+      alert("Game over!");
       setGameOver(true);
     });
+
+    // Listen for points updates
+    room.onMessage("points_update", (data) => {
+      const points = data.points[room.sessionId];
+      if (points !== undefined) {
+        setPlayerPoints(points);
+      }
+    });
+
+    // Request initial points
+    room.send("request_points");
 
     // Initial state sync
     const currentPlayers = [];
@@ -81,6 +97,7 @@ const RedLightGreenLight: React.FC<Props> = ({ room }) => {
   return (
     <div>
       <h1>Red Light, Green Light</h1>
+      <h3>Your Points: {playerPoints}</h3>
       <div
         style={{
           margin: "20px",

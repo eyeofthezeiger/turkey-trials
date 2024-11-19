@@ -1,4 +1,4 @@
-// games/TicTacToeLogic.ts
+// games/TicTacToe.ts
 
 import { Client } from "colyseus";
 import { GameState } from "../models/GameState";
@@ -21,26 +21,32 @@ export class TicTacToe {
   }
 
   matchPlayersForTicTacToe() {
-    const waitingPlayers = Array.from(this.state.players.values()).filter((p) => !p.inGame && !p.waiting);
+    const waitingPlayers = Array.from(this.state.players.values()).filter(
+      (p) => !p.inGame && !p.waiting
+    );
 
     while (waitingPlayers.length >= 2) {
       const playerX = waitingPlayers.pop();
       const playerO = waitingPlayers.pop();
+
       if (playerX && playerO) {
-        this.startTicTacToeGame(playerX, playerO);
+        this.startGame(playerX, playerO);
       }
     }
 
-    if (waitingPlayers.length === 1) {
-      const unmatchedPlayer = waitingPlayers[0];
-      unmatchedPlayer.waiting = true;
-      this.broadcast("waiting_for_match", {}, {});
+    if (waitingPlayers.length > 0) {
+      const waitingPlayer = waitingPlayers[0];
+      waitingPlayer.waiting = true;
+      console.log(`[Server] Player ${waitingPlayer.id} is waiting for an opponent.`);
+      this.broadcast("waiting_for_match", { playerId: waitingPlayer.id });
     }
   }
 
-  startTicTacToeGame(playerX: Player, playerO: Player) {
+  startGame(playerX: Player, playerO: Player) {
     playerX.inGame = true;
     playerO.inGame = true;
+    playerX.waiting = false;
+    playerO.waiting = false;
 
     const game = new TicTacToeGame();
     game.playerX = playerX.id;
@@ -71,10 +77,37 @@ export class TicTacToe {
         if (winner) {
           game.completed = true;
           console.log(`[Server] Game completed! Winner: ${winner}`);
+
+          // Award points
+          const playerX = this.state.players.get(game.playerX);
+          const playerO = this.state.players.get(game.playerO);
+
+          if (winner === "X") {
+            if (playerX) playerX.points += 7;
+            if (playerO) playerO.points += 0;
+          } else if (winner === "O") {
+            if (playerO) playerO.points += 7;
+            if (playerX) playerX.points += 0;
+          }
+
+          // Broadcast updated points
+          this.broadcastPointsUpdate();
+
           this.broadcast("game_completed", { winner });
         } else if (!game.board.includes("")) {
           game.completed = true;
           console.log(`[Server] Game completed! It's a draw.`);
+
+          // Award points
+          const playerX = this.state.players.get(game.playerX);
+          const playerO = this.state.players.get(game.playerO);
+
+          if (playerX) playerX.points += 4;
+          if (playerO) playerO.points += 4;
+
+          // Broadcast updated points
+          this.broadcastPointsUpdate();
+
           this.broadcast("game_completed", { winner: "draw" });
         } else {
           game.currentTurn = game.currentTurn === "X" ? "O" : "X";
@@ -124,5 +157,37 @@ export class TicTacToe {
       }
     }
     return null;
+  }
+
+  broadcastPointsUpdate() {
+    const points: { [key: string]: number } = {};
+    for (const [id, player] of this.state.players.entries()) {
+      points[id] = player.points;
+    }
+    this.broadcast("points_update", { points });
+}
+
+
+  handlePlayerLeave(playerId: string) {
+    // Handle player leaving during a game
+    const gameIndex = this.state.ticTacToeGames.findIndex(
+      (g) => g.playerX === playerId || g.playerO === playerId
+    );
+    if (gameIndex !== -1) {
+      const game = this.state.ticTacToeGames[gameIndex];
+      game.completed = true;
+      this.state.ticTacToeGames.splice(gameIndex, 1);
+
+      // Update opponent's status
+      const opponentId = game.playerX === playerId ? game.playerO : game.playerX;
+      const opponent = this.state.players.get(opponentId);
+      if (opponent) {
+        opponent.inGame = false;
+        opponent.waiting = false;
+      }
+
+      // Notify opponent
+      this.broadcast("opponent_left", { opponentId });
+    }
   }
 }

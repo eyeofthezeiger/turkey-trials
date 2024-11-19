@@ -5,8 +5,9 @@ import RedLightGreenLight from "./components/RedLightGreenLight";
 import SlidingPuzzle from "./components/SlidingPuzzle";
 import TicTacToe from "./components/TicTacToe";
 import RockPaperScissors from "./components/RockPaperScissors";
+import Leaderboard from "./components/Leaderboard"; // New component
 
-type GamePageKey = "welcome" | "game1" | "game2" | "game3" | "final";
+type GamePageKey = "welcome" | "game1" | "game2" | "game3" | "final" | "tournament_over";
 
 const serverUrl =
   process.env.NODE_ENV === "production"
@@ -21,6 +22,9 @@ const App: React.FC = () => {
   const [players, setPlayers] = useState<string[]>([]);
   const [inLobby, setInLobby] = useState<boolean>(false);
 
+  const [playerPoints, setPlayerPoints] = useState<{ [key: string]: number }>({});
+  const [leaderboard, setLeaderboard] = useState<{ id: string; points: number }[]>([]);
+
   useEffect(() => {
     const joinRoom = async () => {
       console.log("[Client] Attempting to join or create room...");
@@ -31,6 +35,7 @@ const App: React.FC = () => {
 
         // Log initial room state
         console.log(`[Client] Initial game state: ${gameRoom.state.currentGame}`);
+        setCurrentGame(gameRoom.state.currentGame);
 
         // Listen for game state changes
         gameRoom.onMessage("game_changed", (newGame: GamePageKey) => {
@@ -50,6 +55,23 @@ const App: React.FC = () => {
             prevPlayers.filter((player) => player !== data.playerId)
           );
         });
+
+        // Listen for points updates
+        gameRoom.onMessage("points_update", (data) => {
+          console.log("[Client] Points update:", data.points);
+          setPlayerPoints(data.points);
+
+          // Update leaderboard
+          const leaderboardData = Object.entries(data.points).map(([id, points]) => ({
+            id,
+            points,
+          }));
+          leaderboardData.sort((a, b) => b.points - a.points);
+          setLeaderboard(leaderboardData);
+        });
+
+        // Request initial points
+        gameRoom.send("request_points");
       } catch (error) {
         console.error("[Client] Failed to join or create room:", error);
       }
@@ -75,17 +97,30 @@ const App: React.FC = () => {
   };
 
   const renderCurrentGame = () => {
+    if (currentGame === "tournament_over") {
+      // Tournament is over, display final leaderboard and winner
+      return (
+        <div style={{ textAlign: "center" }}>
+          <h1>Tournament Over</h1>
+          <h2>
+            Winner: {leaderboard[0]?.id} with {leaderboard[0]?.points} points!
+          </h2>
+          <Leaderboard leaderboard={leaderboard} />
+        </div>
+      );
+    }
+
     switch (currentGame) {
       case "welcome":
         return <h1>Welcome to the tournament</h1>;
       case "game1":
-        return <RedLightGreenLight room={room!}/>;
+        return <RedLightGreenLight room={room!} />;
       case "game2":
-        return <TicTacToe room={room!}/>;
+        return <TicTacToe room={room!} />;
       case "game3":
-        return <SlidingPuzzle room={room!}/>;
+        return <SlidingPuzzle room={room!} />;
       case "final":
-        return <RockPaperScissors room={room!}/>;
+        return <RockPaperScissors room={room!} />;
       default:
         return <h1>Page Not Found</h1>;
     }
@@ -106,12 +141,17 @@ const App: React.FC = () => {
         <button onClick={() => room?.send("change_game", "final")}>
           Go to Final Round
         </button>
+        <button onClick={() => room?.send("change_game", "tournament_over")}>
+          End Tournament
+        </button>
         <button onClick={() => room?.send("change_game", "welcome")}>
           Go to Welcome
         </button>
       </nav>
 
       <main>{renderCurrentGame()}</main>
+
+      <Leaderboard leaderboard={leaderboard} />
 
       <section>
         <h2>Lobby</h2>

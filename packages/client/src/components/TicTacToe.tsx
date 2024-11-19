@@ -12,6 +12,7 @@ const TicTacToe: React.FC<Props> = ({ room }) => {
   const [isWaiting, setIsWaiting] = useState<boolean>(false);
   const [playerMark, setPlayerMark] = useState<"X" | "O" | null>(null); // Player's mark
   const [opponent, setOpponent] = useState<string | null>(null); // Opponent's session ID
+  const [playerPoints, setPlayerPoints] = useState<number>(0);
 
   useEffect(() => {
     if (!room) {
@@ -59,6 +60,22 @@ const TicTacToe: React.FC<Props> = ({ room }) => {
       setIsWaiting(true);
     });
 
+    room.onMessage("opponent_left", () => {
+      console.log("[Client] Opponent left the game.");
+      setIsWaiting(true);
+    });
+
+    // Listen for points updates
+    room.onMessage("points_update", (data) => {
+      const points = data.points[room.sessionId];
+      if (points !== undefined) {
+        setPlayerPoints(points);
+      }
+    });
+
+    // Request initial points
+    room.send("request_points");
+
     return () => {
       room.removeAllListeners();
     };
@@ -96,6 +113,7 @@ const TicTacToe: React.FC<Props> = ({ room }) => {
       <div style={{ textAlign: "center" }}>
         <h1>Tic Tac Toe</h1>
         <h2>Waiting for another player...</h2>
+        <h3>Your Points: {playerPoints}</h3>
       </div>
     );
   }
@@ -103,11 +121,18 @@ const TicTacToe: React.FC<Props> = ({ room }) => {
   return (
     <div style={{ textAlign: "center" }}>
       <h1>Tic Tac Toe</h1>
+      <h3>Your Points: {playerPoints}</h3>
       {opponent && <h2>Opponent: {opponent}</h2>}
       {winner ? (
-        <h2>
-          {winner === "draw" ? "It's a draw!" : `${winner} wins!`}
-        </h2>
+        <div>
+          <h2>
+            {winner === "draw"
+              ? "It's a draw! You earned 4 points."
+              : winner === playerMark
+              ? "You win! You earned 7 points."
+              : "You lose. You earned 0 points."}
+          </h2>
+        </div>
       ) : (
         <h2>
           {currentTurn === playerMark

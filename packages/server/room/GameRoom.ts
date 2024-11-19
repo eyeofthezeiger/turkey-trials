@@ -38,6 +38,8 @@ export class GameRoom extends Room<GameState> {
         this.slidingPuzzle.startSlidingPuzzle();
       } else if (newGame === "final") {
         this.rockPaperScissors.matchPlayersForRPS();
+      } else if (newGame === "tournament_over") {
+        this.broadcastPointsUpdate();
       } else {
         this.stopAllTimers();
       }
@@ -50,7 +52,6 @@ export class GameRoom extends Room<GameState> {
         this.state.players.set(client.sessionId, new Player(client.sessionId));
         console.log(`[Server] Client ${client.sessionId} added to lobby.`);
         this.broadcast("player_joined", { playerId: client.sessionId });
-
         if (this.state.currentGame === "game2") {
           this.ticTacToe.matchPlayersForTicTacToe();
         } else if (this.state.currentGame === "final") {
@@ -84,7 +85,20 @@ export class GameRoom extends Room<GameState> {
     this.onMessage("complete_puzzle", (client, puzzleTime: number) => {
       this.slidingPuzzle.handlePuzzleCompletion(client, puzzleTime);
     });
+
+    // Handle points request
+    this.onMessage("request_points", (client) => {
+      this.broadcastPointsUpdate();
+    });
   }
+
+  broadcastPointsUpdate() {
+    const points: { [key: string]: number } = {};
+    for (const [id, player] of this.state.players.entries()) {
+      points[id] = player.points;
+    }
+    this.broadcast("points_update", { points });
+}
 
   stopAllTimers() {
     this.slidingPuzzle.stopTimer();
@@ -106,9 +120,12 @@ export class GameRoom extends Room<GameState> {
 
       // Handle player leave based on current game
       if (this.state.currentGame === "game2") {
+        this.ticTacToe.handlePlayerLeave(client.sessionId);
         this.ticTacToe.matchPlayersForTicTacToe();
       } else if (this.state.currentGame === "final") {
         this.rockPaperScissors.handlePlayerLeave(client.sessionId);
+      } else if (this.state.currentGame === "game1") {
+        this.redLightGreenLight.handlePlayerLeave(client.sessionId);
       }
 
       this.broadcast("player_left", { playerId: client.sessionId });

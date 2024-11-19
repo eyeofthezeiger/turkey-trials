@@ -1,4 +1,4 @@
-// games/SlidingPuzzleLogic.ts
+// games/SlidingPuzzle.ts
 
 import { Client } from "colyseus";
 import { GameState } from "../models/GameState";
@@ -31,6 +31,14 @@ export class SlidingPuzzle {
       `[Server] Player ${client.sessionId} completed a puzzle. Total completed: ${player.puzzlesCompleted}`
     );
 
+    // Award points
+    player.points += 5;
+
+    // Check if all puzzles are completed
+    if (player.puzzlesCompleted === 7) {
+      player.points += 5; // Bonus points
+    }
+
     // Assign a new puzzle image
     this.assignNewPuzzle();
     this.broadcast("puzzle_completed", {
@@ -39,6 +47,9 @@ export class SlidingPuzzle {
       puzzleTimes: player.puzzleTimes,
       newImage: this.state.currentImage,
     });
+
+    // Broadcast updated points
+    this.broadcastPointsUpdate();
   }
 
   private assignNewPuzzle() {
@@ -70,4 +81,13 @@ export class SlidingPuzzle {
     this.gameTimer = null;
     this.state.timerRunning = false;
   }
+
+  broadcastPointsUpdate() {
+    const points: { [key: string]: number } = {};
+    for (const [id, player] of this.state.players.entries()) {
+      points[id] = player.points;
+    }
+    this.broadcast("points_update", { points });
+}
+
 }
