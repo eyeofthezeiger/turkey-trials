@@ -79,7 +79,7 @@ const App: React.FC = () => {
       case "welcome":
         return <h1>Welcome to the tournament</h1>;
       case "game1":
-        return <RedLightGreenLight />;
+        return <RedLightGreenLight room={room!}/>;
       case "game2":
         return <TicTacToe />;
       case "game3":
