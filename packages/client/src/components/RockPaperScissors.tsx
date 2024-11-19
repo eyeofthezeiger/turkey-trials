@@ -1,5 +1,7 @@
+/* components/RockPaperScissors.tsx */
 import React, { useState, useEffect } from "react";
 import { Room } from "colyseus.js";
+import "./../App.css"; // Import the consolidated CSS file
 
 interface Props {
   room: Room;
@@ -13,6 +15,10 @@ const RockPaperScissors: React.FC<Props> = ({ room }) => {
   const [winner, setWinner] = useState<string | null>(null);
   const [isWaiting, setIsWaiting] = useState<boolean>(true);
   const [playerPoints, setPlayerPoints] = useState<number>(0);
+
+  interface PointsUpdateMessage {
+    points: { [key: string]: number };
+  }
 
   useEffect(() => {
     room.onMessage("rps_started", (data) => {
@@ -55,7 +61,7 @@ const RockPaperScissors: React.FC<Props> = ({ room }) => {
     });
 
     // Listen for points updates
-    room.onMessage("points_update", (data) => {
+    room.onMessage("points_update", (data: PointsUpdateMessage) => {
       const points = data.points[room.sessionId];
       if (points !== undefined) {
         setPlayerPoints(points);
@@ -80,7 +86,7 @@ const RockPaperScissors: React.FC<Props> = ({ room }) => {
 
   if (isWaiting) {
     return (
-      <div style={{ textAlign: "center" }}>
+      <div className="rps">
         <h1>Rock Paper Scissors</h1>
         <h3>Your Points: {playerPoints}</h3>
         <h2>Waiting for an opponent...</h2>
@@ -89,7 +95,7 @@ const RockPaperScissors: React.FC<Props> = ({ room }) => {
   }
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className="rps">
       <h1>Rock Paper Scissors</h1>
       <h3>Your Points: {playerPoints}</h3>
       {opponent && <h2>Opponent: {opponent}</h2>}
@@ -111,7 +117,7 @@ const RockPaperScissors: React.FC<Props> = ({ room }) => {
       ) : (
         <h2>Make your move</h2>
       )}
-      <div>
+      <div className="rps-buttons">
         <button onClick={() => makeMove("rock")} disabled={!!playerMove}>
           Rock
         </button>

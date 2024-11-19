@@ -1,10 +1,7 @@
+/* components/SlidingPuzzle.tsx */
 import React, { useEffect, useState } from "react";
 import { Room } from "colyseus.js";
-
-// Props to pass the room instance
-interface Props {
-  room: Room;
-}
+import "./../App.css"; // Import the consolidated CSS file
 
 // Correct order for the sliding puzzle
 const correctOrder = [1, 2, 3, 4, 5, 6, 7, 8, null];
@@ -28,6 +25,10 @@ const images = {
   pet7,
 } as const;
 
+interface Props {
+  room: Room;
+}
+
 const SlidingPuzzle: React.FC<Props> = ({ room }) => {
   const [grid, setGrid] = useState<(number | null)[]>([]);
   const [puzzleImage, setPuzzleImage] = useState<string | null>(null);
@@ -35,6 +36,10 @@ const SlidingPuzzle: React.FC<Props> = ({ room }) => {
   const [completedPuzzles, setCompletedPuzzles] = useState<number>(0);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
   const [playerPoints, setPlayerPoints] = useState<number>(0);
+
+  interface PointsUpdateMessage {
+    points: { [key: string]: number };
+  }
 
   useEffect(() => {
     if (!room) {
@@ -72,7 +77,7 @@ const SlidingPuzzle: React.FC<Props> = ({ room }) => {
     });
 
     // Listen for points updates
-    room.onMessage("points_update", (data) => {
+    room.onMessage("points_update", (data: PointsUpdateMessage) => {
       const points = data.points[room.sessionId];
       if (points !== undefined) {
         setPlayerPoints(points);
@@ -154,20 +159,15 @@ const SlidingPuzzle: React.FC<Props> = ({ room }) => {
     console.log("[Client] Rendering grid with puzzleImage:", puzzleImage);
 
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 100px)", gap: "5px" }}>
+      <div className="sliding-puzzle-grid">
         {grid.map((block, index) => (
           <div
             key={index}
             onClick={() => moveBlock(index)}
+            className="sliding-puzzle-cell"
             style={{
-              width: "100px",
-              height: "100px",
-              border: "1px solid black",
-              backgroundColor: block !== null ? "transparent" : "#f0f0f0",
               backgroundImage: block !== null ? `url(${puzzleImage})` : "none",
-              backgroundSize: "300px 300px",
               backgroundPosition: getBackgroundPosition(block),
-              cursor: canMove(index) ? "pointer" : "default",
             }}
           />
         ))}
@@ -185,7 +185,7 @@ const SlidingPuzzle: React.FC<Props> = ({ room }) => {
 
   if (isGameOver) {
     return (
-      <div style={{ textAlign: "center" }}>
+      <div className="sliding-puzzle">
         <h1>Game Over!</h1>
         <h2>You completed {completedPuzzles} puzzles.</h2>
         <h3>Your Points: {playerPoints}</h3>
@@ -194,7 +194,7 @@ const SlidingPuzzle: React.FC<Props> = ({ room }) => {
   }
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className="sliding-puzzle">
       <h1>Sliding Puzzle</h1>
       <h3>Your Points: {playerPoints}</h3>
       <p>Time Remaining: {Math.ceil(timer / 1000)} seconds</p>
@@ -206,12 +206,12 @@ const SlidingPuzzle: React.FC<Props> = ({ room }) => {
       )}
       <p>Arrange the blocks to form the correct image</p>
       {puzzleImage && (
-        <div style={{ marginTop: "20px" }}>
+        <div className="sliding-puzzle-completed">
           <h3>Completed Picture:</h3>
           <img
             src={puzzleImage}
             alt="Completed Puzzle"
-            style={{ width: "300px", height: "300px", border: "1px solid black" }}
+            className="sliding-puzzle-image"
           />
         </div>
       )}

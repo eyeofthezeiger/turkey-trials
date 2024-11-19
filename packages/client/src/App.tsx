@@ -1,11 +1,13 @@
 /* eslint-disable */
+/* App.tsx */
 import React, { useEffect, useState } from "react";
 import { Client, Room } from "colyseus.js";
 import RedLightGreenLight from "./components/RedLightGreenLight";
 import SlidingPuzzle from "./components/SlidingPuzzle";
 import TicTacToe from "./components/TicTacToe";
 import RockPaperScissors from "./components/RockPaperScissors";
-import Leaderboard from "./components/Leaderboard"; // New component
+import Leaderboard from "./components/Leaderboard";
+import "./App.css"; // Import the consolidated CSS file
 
 type GamePageKey = "welcome" | "game1" | "game2" | "game3" | "final" | "tournament_over";
 
@@ -24,6 +26,10 @@ const App: React.FC = () => {
 
   const [playerPoints, setPlayerPoints] = useState<{ [key: string]: number }>({});
   const [leaderboard, setLeaderboard] = useState<{ id: string; points: number }[]>([]);
+
+  interface PointsUpdateMessage {
+    points: { [key: string]: number };
+  }
 
   useEffect(() => {
     const joinRoom = async () => {
@@ -57,7 +63,7 @@ const App: React.FC = () => {
         });
 
         // Listen for points updates
-        gameRoom.onMessage("points_update", (data) => {
+        gameRoom.onMessage("points_update", (data: PointsUpdateMessage) => {
           console.log("[Client] Points update:", data.points);
           setPlayerPoints(data.points);
 
@@ -128,25 +134,15 @@ const App: React.FC = () => {
 
   return (
     <div>
-      <nav>
-        <button onClick={() => room?.send("change_game", "game1")}>
-          Switch to Game 1
-        </button>
-        <button onClick={() => room?.send("change_game", "game2")}>
-          Switch to Game 2
-        </button>
-        <button onClick={() => room?.send("change_game", "game3")}>
-          Switch to Game 3
-        </button>
-        <button onClick={() => room?.send("change_game", "final")}>
-          Go to Final Round
-        </button>
+      <nav className="navigation">
+        <button onClick={() => room?.send("change_game", "game1")}>Game 1</button>
+        <button onClick={() => room?.send("change_game", "game2")}>Game 2</button>
+        <button onClick={() => room?.send("change_game", "game3")}>Game 3</button>
+        <button onClick={() => room?.send("change_game", "final")}>Final Round</button>
         <button onClick={() => room?.send("change_game", "tournament_over")}>
           End Tournament
         </button>
-        <button onClick={() => room?.send("change_game", "welcome")}>
-          Go to Welcome
-        </button>
+        <button onClick={() => room?.send("change_game", "welcome")}>Welcome</button>
       </nav>
 
       <main>{renderCurrentGame()}</main>

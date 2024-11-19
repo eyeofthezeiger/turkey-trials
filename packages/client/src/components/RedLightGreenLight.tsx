@@ -1,7 +1,7 @@
+/* components/RedLightGreenLight.tsx */
 import React, { useState, useEffect } from "react";
 import { Room } from "colyseus.js";
-import turkeyGobbleSound from "../assets/Turkey-gobble.mp3";
-import turkeyScreechSound from "../assets/Turkey-noises.mp3";
+import "./../App.css"; // Import the consolidated CSS file
 
 interface Props {
   room: Room; // Pass the Colyseus room as a prop
@@ -12,6 +12,10 @@ const RedLightGreenLight: React.FC<Props> = ({ room }) => {
   const [players, setPlayers] = useState<{ id: string; position: number }[]>([]);
   const [gameOver, setGameOver] = useState(false);
   const [playerPoints, setPlayerPoints] = useState<number>(0);
+
+  interface PointsUpdateMessage {
+    points: { [key: string]: number };
+  }
 
   useEffect(() => {
     // Listen for state changes from the server
@@ -50,7 +54,7 @@ const RedLightGreenLight: React.FC<Props> = ({ room }) => {
     });
 
     // Listen for points updates
-    room.onMessage("points_update", (data) => {
+    room.onMessage("points_update", (data: PointsUpdateMessage) => {
       const points = data.points[room.sessionId];
       if (points !== undefined) {
         setPlayerPoints(points);
@@ -84,61 +88,36 @@ const RedLightGreenLight: React.FC<Props> = ({ room }) => {
   }, [room]);
 
   const movePlayer = () => {
-    if (light === "Green") {
-      const gobbleAudio = new Audio(turkeyGobbleSound);
-      gobbleAudio.play();
-    } else {
-      const screechAudio = new Audio(turkeyScreechSound);
-      screechAudio.play();
-    }
     room.send("rlgl_move");
   };
 
   return (
-    <div>
+    <div className="red-light-green-light">
       <h1>Red Light, Green Light</h1>
       <h3>Your Points: {playerPoints}</h3>
       <div
+        className="light-indicator"
         style={{
-          margin: "20px",
-          padding: "10px",
-          backgroundColor: light === "Green" ? "green" : "red",
-          color: "white",
-          textAlign: "center",
+          backgroundColor: light === "Green" ? "#00FF00" : "#FF0000",
         }}
       >
         {light} Light
       </div>
-      <div style={{ position: "relative", height: "300px", border: "1px solid black" }}>
+      <div className="game-area">
         {players.map((player, index) => (
           <div
             key={player.id}
+            className="player"
             style={{
-              position: "absolute",
-              top: 50 + index * 30,
-              left: player.position,
-              backgroundColor: "gray",
-              width: "50px",
-              height: "50px",
-              lineHeight: "50px",
-              textAlign: "center",
-              color: "white",
+              top: `${50 + index * 30}px`,
+              left: `${player.position}px`,
             }}
           >
             {`Player ${player.id}`}
           </div>
         ))}
       </div>
-      <button
-        style={{
-          marginTop: "20px",
-          padding: "10px 20px",
-          fontSize: "16px",
-          cursor: "pointer",
-        }}
-        onClick={movePlayer}
-        disabled={gameOver}
-      >
+      <button className="move-button" onClick={movePlayer} disabled={gameOver}>
         Move Player
       </button>
     </div>

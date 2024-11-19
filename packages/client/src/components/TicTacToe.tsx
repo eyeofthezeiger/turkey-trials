@@ -1,5 +1,7 @@
+/* components/TicTacToe.tsx */
 import React, { useEffect, useState } from "react";
 import { Room } from "colyseus.js";
+import "./../App.css"; // Import the consolidated CSS file
 
 interface Props {
   room: Room;
@@ -13,6 +15,10 @@ const TicTacToe: React.FC<Props> = ({ room }) => {
   const [playerMark, setPlayerMark] = useState<"X" | "O" | null>(null); // Player's mark
   const [opponent, setOpponent] = useState<string | null>(null); // Opponent's session ID
   const [playerPoints, setPlayerPoints] = useState<number>(0);
+
+  interface PointsUpdateMessage {
+    points: { [key: string]: number };
+  }
 
   useEffect(() => {
     if (!room) {
@@ -66,7 +72,7 @@ const TicTacToe: React.FC<Props> = ({ room }) => {
     });
 
     // Listen for points updates
-    room.onMessage("points_update", (data) => {
+    room.onMessage("points_update", (data: PointsUpdateMessage) => {
       const points = data.points[room.sessionId];
       if (points !== undefined) {
         setPlayerPoints(points);
@@ -92,34 +98,24 @@ const TicTacToe: React.FC<Props> = ({ room }) => {
     <div
       key={index}
       onClick={() => handleCellClick(index)}
-      style={{
-        width: "100px",
-        height: "100px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        border: "2px solid black",
-        fontSize: "3em",
-        cursor: cell === "" && currentTurn === playerMark && !winner ? "pointer" : "default",
-        backgroundColor: cell === "" ? "#f9f9f9" : "#eaeaea",
-      }}
+      className="tictactoe-cell"
     >
-      <span style={{ color: "black" }}>{cell}</span>
+      <span>{cell}</span>
     </div>
   );
 
   if (isWaiting) {
     return (
-      <div style={{ textAlign: "center" }}>
+      <div className="tictactoe">
         <h1>Tic Tac Toe</h1>
-        <h2>Waiting for another player...</h2>
         <h3>Your Points: {playerPoints}</h3>
+        <h2>Waiting for another player...</h2>
       </div>
     );
   }
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className="tictactoe">
       <h1>Tic Tac Toe</h1>
       <h3>Your Points: {playerPoints}</h3>
       {opponent && <h2>Opponent: {opponent}</h2>}
@@ -140,29 +136,13 @@ const TicTacToe: React.FC<Props> = ({ room }) => {
             : `${opponent ? "Opponent's Turn" : "Waiting for Opponent..."}`}
         </h2>
       )}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 100px)",
-          gap: "5px",
-          margin: "20px auto",
-        }}
-      >
+      <div className="tictactoe-board">
         {board.map((cell, index) => renderCell(cell, index))}
       </div>
       {winner && (
         <button
           onClick={() => room.send("reset_game")}
-          style={{
-            marginTop: "20px",
-            padding: "10px 20px",
-            backgroundColor: "black",
-            color: "white",
-            fontSize: "1.2em",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-          }}
+          className="tictactoe-reset-button"
         >
           Play Again
         </button>
