@@ -10,19 +10,37 @@ export class RedLightGreenLight {
   private lightInterval: NodeJS.Timeout | null = null;
   private finishOrder: Player[] = [];
   private gameOver: boolean = false;
+  private round: number;
 
-  
-
-  constructor(state: GameState, broadcast: Function) {
+  constructor(state: GameState, broadcast: Function, round: number) {
     this.state = state;
     this.broadcast = broadcast;
+    this.round = round;
   }
 
-  startRedLightGreenLight() {
-    console.log("[Server] Starting Red Light, Green Light...");
+  startRedLightGreenLight(round: number) {
+    this.round = round;
+    console.log(`[Server] Starting Red Light, Green Light Round ${this.round}...`);
     this.resetGame();
+
+    // Adjust difficulty based on round
+    let intervalTime: number;
+    switch (this.round) {
+      case 1:
+        intervalTime = 3000; // Initial interval
+        break;
+      case 2:
+        intervalTime = 2500; // Increased difficulty
+        break;
+      case 3:
+        intervalTime = 2000; // Highest difficulty
+        break;
+      default:
+        intervalTime = 3000;
+    }
+
     this.toggleLight();
-    this.lightInterval = setInterval(() => this.toggleLight(), Math.random() * 3000 + 2000); // Random interval
+    this.lightInterval = setInterval(() => this.toggleLight(), intervalTime);
   }
 
   handlePlayerMove(client: Client) {
@@ -55,14 +73,14 @@ export class RedLightGreenLight {
       console.log(`[Server] Player ${client.sessionId} reached the finish line!`);
       this.broadcast("player_finished", { playerId: client.sessionId, position: this.finishOrder.length });
 
-      if (this.finishOrder.length >= 3 || this.finishOrder.length === this.state.players.size) {
+      if (this.finishOrder.length >= 1) { // Adjust based on game design
         this.endGame();
       }
     }
   }
 
   private endGame() {
-    console.log("[Server] Ending Red Light, Green Light game.");
+    console.log(`[Server] Ending Red Light, Green Light Round ${this.round}.`);
     this.gameOver = true;
     this.stopLightInterval();
 
@@ -90,10 +108,10 @@ export class RedLightGreenLight {
     // Broadcast updated points
     this.broadcastPointsUpdate();
 
-    // Notify clients that the game is over
-    this.broadcast("game_over", {});
+    // Notify clients that the round is over (not game over)
+    this.broadcast("round_over", { round: this.round });
 
-    // Reset game state
+    // Reset game state for potential next round
     this.resetGame();
   }
 
@@ -117,8 +135,8 @@ export class RedLightGreenLight {
       points[id] = player.points;
     }
     this.broadcast("points_update", { points });
-}
-
+    console.log(`[Server] Broadcasted points_update:`, points);
+  }
 
   handlePlayerLeave(playerId: string) {
     // Handle player leaving during the game if necessary

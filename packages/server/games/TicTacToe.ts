@@ -21,6 +21,7 @@ export class TicTacToe {
   }
 
   matchPlayersForTicTacToe() {
+    console.log('starting match players for tic tac toe')
     const waitingPlayers = Array.from(this.state.players.values()).filter(
       (p) => !p.inGame && !p.waiting
     );

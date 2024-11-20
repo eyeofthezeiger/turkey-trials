@@ -1,13 +1,15 @@
-/* components/RedLightGreenLight.tsx */
+// components/RedLightGreenLight.tsx
+
 import React, { useState, useEffect } from "react";
 import { Room } from "colyseus.js";
 import "./../App.css"; // Import the consolidated CSS file
 
-interface Props {
+interface RedLightGreenLightProps {
   room: Room; // Pass the Colyseus room as a prop
+  round: number; // Current round number
 }
 
-const RedLightGreenLight: React.FC<Props> = ({ room }) => {
+const RedLightGreenLight: React.FC<RedLightGreenLightProps> = ({ room, round }) => {
   const [light, setLight] = useState("Red");
   const [players, setPlayers] = useState<{ id: string; position: number }[]>([]);
   const [gameOver, setGameOver] = useState(false);
@@ -47,10 +49,16 @@ const RedLightGreenLight: React.FC<Props> = ({ room }) => {
       console.log(`[Client] Player ${data.playerId} finished in position ${data.position}`);
     });
 
+    room.onMessage("round_over", (data: { round: number }) => {
+      console.log(`[Client] Round ${data.round} is over.`);
+      setGameOver(true);
+    });
+
     room.onMessage("game_over", () => {
       console.log("[Client] Game over.");
-      alert("Game over!");
+      alert("Tournament Over!");
       setGameOver(true);
+      // Transition handled by App.tsx
     });
 
     // Listen for points updates
@@ -81,19 +89,17 @@ const RedLightGreenLight: React.FC<Props> = ({ room }) => {
       console.log("[Client] Player removed:", key);
       setPlayers((prev) => prev.filter((p) => p.id !== key));
     };
-
-    return () => {
-      room.removeAllListeners();
-    };
   }, [room]);
 
   const movePlayer = () => {
-    room.send("rlgl_move");
+    if (!gameOver) {
+      room.send("rlgl_move");
+    }
   };
 
   return (
     <div className="red-light-green-light">
-      <h1>Red Light, Green Light</h1>
+      <h1>Red Light, Green Light - Round {round}</h1>
       <h3>Your Points: {playerPoints}</h3>
       <div
         className="light-indicator"

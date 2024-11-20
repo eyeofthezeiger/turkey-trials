@@ -1,12 +1,7 @@
-/* components/SlidingPuzzle.tsx */
+// SlidingPuzzle.tsx
+
 import React, { useEffect, useState } from "react";
 import { Room } from "colyseus.js";
-import "./../App.css"; // Import the consolidated CSS file
-
-// Correct order for the sliding puzzle
-const correctOrder = [1, 2, 3, 4, 5, 6, 7, 8, null];
-
-// Image assets
 import pet1 from "../assets/pet1.jpg";
 import pet2 from "../assets/pet2.jpg";
 import pet3 from "../assets/pet3.jpg";
@@ -15,6 +10,7 @@ import pet5 from "../assets/pet5.jpg";
 import pet6 from "../assets/pet6.jpg";
 import pet7 from "../assets/pet7.jpg";
 
+// Map of image names to imports
 const images = {
   pet1,
   pet2,
@@ -25,79 +21,47 @@ const images = {
   pet7,
 } as const;
 
-interface Props {
+// Type for image keys
+type ImageKeys = keyof typeof images;
+
+const correctOrder = [1, 2, 3, 4, 5, 6, 7, 8, null];
+
+interface SlidingPuzzleProps {
   room: Room;
 }
 
-const SlidingPuzzle: React.FC<Props> = ({ room }) => {
+const SlidingPuzzle: React.FC<SlidingPuzzleProps> = ({ room }) => {
   const [grid, setGrid] = useState<(number | null)[]>([]);
-  const [puzzleImage, setPuzzleImage] = useState<string | null>(null);
-  const [timer, setTimer] = useState<number>(300000); // 5 minutes in milliseconds
-  const [completedPuzzles, setCompletedPuzzles] = useState<number>(0);
-  const [isGameOver, setIsGameOver] = useState<boolean>(false);
-  const [playerPoints, setPlayerPoints] = useState<number>(0);
-
-  interface PointsUpdateMessage {
-    points: { [key: string]: number };
-  }
+  const [completionTime, setCompletionTime] = useState<number | null>(null);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
+  const [timerRunning, setTimerRunning] = useState<boolean>(false);
+  const [puzzleImage, setPuzzleImage] = useState<string>("");
 
   useEffect(() => {
-    if (!room) {
-      console.error("[Client] Room is not available.");
-      return;
+    // Randomly select an image from the available images
+    const imageKeys = Object.keys(images) as ImageKeys[];
+    const randomImageKey = imageKeys[Math.floor(Math.random() * imageKeys.length)];
+    const selectedImage = images[randomImageKey];
+    setPuzzleImage(selectedImage);
+
+    const shuffledGrid = shuffleGrid([...correctOrder]);
+    setGrid(shuffledGrid);
+  }, []);
+
+  useEffect(() => {
+    let interval: number | undefined;
+
+    if (timerRunning) {
+      interval = window.setInterval(() => {
+        setElapsedTime(Date.now() - (startTime || Date.now()));
+      }, 100);
     }
-
-    // Listen for server updates
-    room.onMessage("new_puzzle", (data) => {
-      console.log("[Client] Received new puzzle image:", data.image);
-      const selectedImage = images[data.image as keyof typeof images];
-      if (selectedImage) {
-        setPuzzleImage(selectedImage);
-        setGrid(shuffleGrid([...correctOrder]));
-      } else {
-        console.error("[Client] Invalid image key received:", data.image);
-      }
-    });
-
-    room.onMessage("timer_update", (data) => {
-      console.log("[Client] Timer update:", data.remainingTime);
-      setTimer(data.remainingTime);
-    });
-
-    room.onMessage("puzzle_completed", (data) => {
-      console.log(`[Client] Puzzle completed by ${data.playerId}`);
-      if (data.playerId === room.sessionId) {
-        setCompletedPuzzles(data.puzzlesCompleted);
-      }
-    });
-
-    room.onMessage("game_over", () => {
-      console.log("[Client] Game over");
-      setIsGameOver(true);
-    });
-
-    // Listen for points updates
-    room.onMessage("points_update", (data: PointsUpdateMessage) => {
-      const points = data.points[room.sessionId];
-      if (points !== undefined) {
-        setPlayerPoints(points);
-      }
-    });
-
-    // Request initial points
-    room.send("request_points");
 
     return () => {
-      room.removeAllListeners();
+      if (interval) clearInterval(interval);
     };
-  }, [room]);
-
-  useEffect(() => {
-    if (timer <= 0 && !isGameOver) {
-      console.log("[Client] Timer reached zero.");
-      setIsGameOver(true);
-    }
-  }, [timer, isGameOver]);
+  }, [timerRunning, startTime]);
 
   const shuffleGrid = (grid: (number | null)[]): (number | null)[] => {
     let shuffledGrid = grid
@@ -147,27 +111,67 @@ const SlidingPuzzle: React.FC<Props> = ({ room }) => {
       newGrid[index] = null;
       setGrid(newGrid);
 
+      if (!timerRunning) {
+        setStartTime(Date.now());
+        setTimerRunning(true);
+      }
+
       if (JSON.stringify(newGrid) === JSON.stringify(correctOrder)) {
-        console.log("[Client] Puzzle solved!");
-        const completionTime = 300000 - timer; // Time taken to complete
-        room.send("complete_puzzle", completionTime);
+        console.log("Puzzle solved!");
+        const endTime = Date.now();
+        const totalTime = endTime - (startTime || endTime);
+        setCompletionTime(totalTime);
+        setTimerRunning(false);
+
+        // Send completion message to server
+        room.send("complete_puzzle", { puzzleTime: totalTime });
+
+        // Optionally, reset the puzzle after a short delay
+        setTimeout(() => {
+          resetPuzzle();
+        }, 3000);
       }
     }
   };
 
-  const renderGrid = () => {
-    console.log("[Client] Rendering grid with puzzleImage:", puzzleImage);
+  const resetPuzzle = () => {
+    const imageKeys = Object.keys(images) as ImageKeys[];
+    const randomImageKey = imageKeys[Math.floor(Math.random() * imageKeys.length)];
+    const selectedImage = images[randomImageKey];
+    setPuzzleImage(selectedImage);
 
+    const shuffledGrid = shuffleGrid([...correctOrder]);
+    setGrid(shuffledGrid);
+    setCompletionTime(null);
+    setElapsedTime(0);
+    setTimerRunning(false);
+    setStartTime(null);
+  };
+
+  const renderGrid = () => {
     return (
-      <div className="sliding-puzzle-grid">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 100px)",
+          gap: "5px",
+          justifyContent: "center",
+          margin: "0 auto",
+        }}
+      >
         {grid.map((block, index) => (
           <div
             key={index}
             onClick={() => moveBlock(index)}
-            className="sliding-puzzle-cell"
             style={{
+              width: "100px",
+              height: "100px",
+              border: "1px solid black",
+              backgroundColor: block !== null ? "transparent" : "#f0f0f0",
               backgroundImage: block !== null ? `url(${puzzleImage})` : "none",
+              backgroundSize: "300px 300px", // Adjust based on the full image size
               backgroundPosition: getBackgroundPosition(block),
+              cursor: canMove(index) ? "pointer" : "default",
             }}
           />
         ))}
@@ -183,38 +187,23 @@ const SlidingPuzzle: React.FC<Props> = ({ room }) => {
     return `-${col * 100}px -${row * 100}px`;
   };
 
-  if (isGameOver) {
-    return (
-      <div className="sliding-puzzle">
-        <h1>Game Over!</h1>
-        <h2>You completed {completedPuzzles} puzzles.</h2>
-        <h3>Your Points: {playerPoints}</h3>
-      </div>
-    );
-  }
-
   return (
-    <div className="sliding-puzzle">
-      <h1>Sliding Puzzle</h1>
-      <h3>Your Points: {playerPoints}</h3>
-      <p>Time Remaining: {Math.ceil(timer / 1000)} seconds</p>
-      <p>Puzzles Completed: {completedPuzzles}</p>
-      {puzzleImage ? (
-        renderGrid()
-      ) : (
-        <h3>Loading puzzle image...</h3>
-      )}
+    <div style={{ textAlign: "center" }}>
+      <h1>Sliding Block Puzzle</h1>
+      {renderGrid()}
       <p>Arrange the blocks to form the correct image</p>
-      {puzzleImage && (
-        <div className="sliding-puzzle-completed">
-          <h3>Completed Picture:</h3>
-          <img
-            src={puzzleImage}
-            alt="Completed Puzzle"
-            className="sliding-puzzle-image"
-          />
-        </div>
+      <h3>Time: {timerRunning ? `${elapsedTime} ms` : "0 ms"}</h3>
+      {completionTime !== null && (
+        <h2>Congratulations! Puzzle completed in {completionTime} milliseconds.</h2>
       )}
+      <div style={{ marginTop: "20px" }}>
+        <h3>Completed Picture:</h3>
+        <img
+          src={puzzleImage}
+          alt="Completed Puzzle"
+          style={{ width: "300px", height: "300px", border: "1px solid black" }}
+        />
+      </div>
     </div>
   );
 };

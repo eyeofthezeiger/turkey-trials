@@ -1,0 +1,39 @@
+/* components/Transition.css */
+.transition-screen {
+    text-align: center;
+    padding: 50px;
+    animation: fade-in 1s ease-in-out;
+  }
+  
+  .transition-screen h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+    color: #FFEA00; /* Bright Yellow */
+    text-shadow: 2px 2px #1B03A3; /* Electric Blue */
+  }
+  
+  .transition-screen h2 {
+    font-size: 2em;
+    margin-bottom: 10px;
+  }
+  
+  .transition-screen ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .transition-screen li {
+    font-size: 1.5em;
+    margin: 5px 0;
+  }
+  
+  .transition-screen h3 {
+    font-size: 1.5em;
+    margin-top: 20px;
+  }
+  
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  

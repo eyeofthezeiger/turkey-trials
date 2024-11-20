@@ -81,10 +81,6 @@ const TicTacToe: React.FC<Props> = ({ room }) => {
 
     // Request initial points
     room.send("request_points");
-
-    return () => {
-      room.removeAllListeners();
-    };
   }, [room]);
 
   const handleCellClick = (index: number) => {
