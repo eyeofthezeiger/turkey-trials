@@ -427,7 +427,7 @@ const App: React.FC = () => {
               </button>
               <button
                 onClick={() => startFinalPuzzle()}
-                disabled={currentRound < 3 || currentGame === "final_puzzle"}
+                disabled={currentGame === "final_puzzle"}
               >
                 Start Final Puzzle
               </button>
