@@ -5,6 +5,10 @@ import { Client, Room } from "colyseus.js";
 import RedLightGreenLight from "./components/RedLightGreenLight";
 import SlidingPuzzle from "./components/SlidingPuzzle";
 import Leaderboard from "./components/Leaderboard";
+import Lobby from "./components/Lobby";
+import RoundWinner from "./components/RoundWinner";
+import GameWinner from "./components/GameWinner";
+import GameRules from "./components/GameRules"; // Import GameRules
 import "./App.css"; // Import the consolidated CSS file
 
 type GamePageKey =
@@ -13,6 +17,8 @@ type GamePageKey =
   | "rlgl_round2"
   | "rlgl_round3"
   | "final_puzzle"
+  | "round_winner"
+  | "game_winner"
   | "tournament_over";
 
 const serverUrl =
@@ -195,8 +201,17 @@ const App: React.FC = () => {
 
     const onRoundOver = (data: { round: number }) => {
       console.log(`[Client] Round ${data.round} has ended.`);
-      // Optionally, notify the host or update the UI accordingly
-      // For example, you can prompt the host to start the next round
+      // For demonstration, we'll transition to the Round Winner screen with hardcoded data
+      setNextGame("round_winner");
+      setIsTransitioning(true);
+      setCountdown(5); // Shorter countdown for round winner
+    };
+
+    const onGameWinner = () => {
+      // Transition to the Game Winner screen with hardcoded data
+      setNextGame("game_winner");
+      setIsTransitioning(true);
+      setCountdown(5); // Shorter countdown for game winner
     };
 
     // Attach event listeners
@@ -210,7 +225,8 @@ const App: React.FC = () => {
     room.onMessage("timer_update", onTimerUpdate);
     room.onMessage("host_assigned", onHostAssigned);
     room.onMessage("game_over", onGameOver);
-    room.onMessage("round_over", onRoundOver); // Optional
+    room.onMessage("round_over", onRoundOver);
+    room.onMessage("game_winner", onGameWinner); // New message
 
     // Cleanup listeners on component unmount or room change
     return () => {
@@ -224,7 +240,8 @@ const App: React.FC = () => {
       room.off("timer_update", onTimerUpdate);
       room.off("host_assigned", onHostAssigned);
       room.off("game_over", onGameOver);
-      room.off("round_over", onRoundOver); // Optional
+      room.off("round_over", onRoundOver);
+      room.off("game_winner", onGameWinner); // New message
     };
   }, [room]);
 
@@ -258,10 +275,6 @@ const App: React.FC = () => {
   }, [isTransitioning, nextGame]);
 
   const renderCurrentGame = () => {
-    if (!inLobby) {
-      return <h1>Please join the lobby to participate in games.</h1>;
-    }
-
     if (isTransitioning) {
       return (
         <div className="transition-message">
@@ -272,28 +285,39 @@ const App: React.FC = () => {
       );
     }
 
-    if (currentGame === "tournament_over") {
-      // Tournament is over, display final leaderboard and winner
-      return (
-        <div style={{ textAlign: "center" }}>
-          <h1>Tournament Over</h1>
-          <h2>
-            Winner: {leaderboard[0]?.id} with {leaderboard[0]?.points} points!
-          </h2>
-          <Leaderboard leaderboard={leaderboard} gameStarted={gameStarted} />
-        </div>
-      );
-    }
-
     switch (currentGame) {
       case "welcome":
         return <h1>Welcome to the tournament</h1>;
       case "rlgl_round1":
       case "rlgl_round2":
       case "rlgl_round3":
-        return <RedLightGreenLight room={room!} round={currentRound} />;
+        return <RedLightGreenLight room={room!} />;
       case "final_puzzle":
         return <SlidingPuzzle room={room!} />;
+      case "round_winner":
+        // Hardcoded data for demonstration
+        return (
+          <RoundWinner
+            roundNumber={currentRound}
+            winnerName="Alice"
+            secondPlace="Bob"
+            thirdPlace="Charlie"
+          />
+        );
+      case "game_winner":
+        // Hardcoded data for demonstration
+        return <GameWinner winnerName="Alice" totalPoints={150} />;
+      case "tournament_over":
+        // Tournament is over, display final leaderboard and winner
+        return (
+          <div className="tournament-over">
+            <h1>Tournament Over</h1>
+            <h2>
+              Winner: {leaderboard[0]?.id} with {leaderboard[0]?.points} points!
+            </h2>
+            <Leaderboard leaderboard={leaderboard} gameStarted={gameStarted} />
+          </div>
+        );
       default:
         // Handle unexpected currentGame values
         console.warn(`Unknown currentGame state: ${currentGame}`);
@@ -319,85 +343,111 @@ const App: React.FC = () => {
     room?.send("change_game", gameKey);
   };
 
+  // For testing purposes: Methods to trigger RoundWinner and GameWinner
+  const triggerRoundWinner = () => {
+    setNextGame("round_winner");
+    setIsTransitioning(true);
+    setCountdown(5); // Short countdown
+  };
+
+  const triggerGameWinner = () => {
+    setNextGame("game_winner");
+    setIsTransitioning(true);
+    setCountdown(5); // Short countdown
+  };
+
   return (
-    <div>
-      <nav className="navigation">
-        {inLobby && isHost && (
-          <div className="host-controls">
-            <h2>Host Controls</h2>
-            <button
-              onClick={() => startRound(1)}
-              disabled={currentRound >= 1}
-            >
-              Start Round 1
-            </button>
-            <button
-              onClick={() => startRound(2)}
-              disabled={currentRound >= 2}
-            >
-              Start Round 2
-            </button>
-            <button
-              onClick={() => startRound(3)}
-              disabled={currentRound >= 3}
-            >
-              Start Round 3
-            </button>
-            <button
-              onClick={() => startFinalPuzzle()}
-              disabled={currentRound < 3 || currentGame === "final_puzzle"}
-            >
-              Start Final Puzzle
-            </button>
-            <button
-              onClick={() => endTournament()}
-              disabled={currentGame === "tournament_over"}
-            >
-              End Tournament
-            </button>
-          </div>
-        )}
-        {inLobby && !isHost && (
-          <div className="host-info">
-            <p>Host: {hostId || "Assigning..."}</p>
-          </div>
-        )}
-      </nav>
+    <div className="app-container">
+      {/* Header/Navbar */}
+      <header className="app-header">
+        <h1>Turkey Trials 2024</h1>
+      </header>
 
-      <main>
-        {currentRound > 0 && (
-          <div className="current-round">
-            <h2>Current Round: {currentRound}</h2>
-          </div>
-        )}
-        {renderCurrentGame()}
-      </main>
-
-      {inLobby && (
-        <Leaderboard leaderboard={leaderboard} gameStarted={gameStarted} />
-      )}
-
-      <section>
-        <h2>Lobby</h2>
-        <div>
-          {inLobby ? (
-            <button onClick={handleLeaveLobby}>Leave Lobby</button>
+      {/* Main Content Grid */}
+      <div className="main-grid">
+        {/* Left Column */}
+        <aside className="left-column">
+          {isHost ? (
+            <div className="host-controls">
+              <h2>Host Controls</h2>
+              <button
+                onClick={() => startRound(1)}
+                disabled={currentRound >= 1}
+              >
+                Start Round 1
+              </button>
+              <button
+                onClick={() => startRound(2)}
+                disabled={currentRound >= 2}
+              >
+                Start Round 2
+              </button>
+              <button
+                onClick={() => startRound(3)}
+                disabled={currentRound >= 3}
+              >
+                Start Round 3
+              </button>
+              <button
+                onClick={() => startFinalPuzzle()}
+                disabled={currentRound < 3 || currentGame === "final_puzzle"}
+              >
+                Start Final Puzzle
+              </button>
+              <button
+                onClick={() => endTournament()}
+                disabled={currentGame === "tournament_over"}
+              >
+                End Tournament
+              </button>
+              {/* Testing Buttons */}
+              <button onClick={triggerRoundWinner}>Show Round Winner</button>
+              <button onClick={triggerGameWinner}>Show Game Winner</button>
+            </div>
           ) : (
-            <button onClick={handleJoinLobby}>Join Lobby</button>
+            <GameRules /> // Show Game Rules for non-hosts
           )}
-        </div>
+        </aside>
 
-        {inLobby && !gameStarted && (
-          <>
-            <h3>Players in Lobby:</h3>
-            <ul>
-              {players.map((player, index) => (
-                <li key={index}>{player}</li>
-              ))}
-            </ul>
-          </>
-        )}
-      </section>
+        {/* Center Column */}
+        <section className="center-column">
+          {currentRound > 0 && (
+            <div className="current-round">
+              <h2>Current Round: {currentRound}</h2>
+            </div>
+          )}
+          {renderCurrentGame()}
+        </section>
+
+        {/* Right Column */}
+        <aside className="right-column">
+          {inLobby ? (
+            <div>
+              <button onClick={handleLeaveLobby} className="leave-button">
+                Leave Lobby
+              </button>
+              {!gameStarted && (
+                <div className="lobby-info">
+                  <h3>Players in Lobby:</h3>
+                  <ul>
+                    {players.map((player, index) => (
+                      <li key={index}>{player}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button onClick={handleJoinLobby} className="join-button">
+              Join Lobby
+            </button>
+          )}
+
+          {inLobby && (
+            <Leaderboard leaderboard={leaderboard} gameStarted={gameStarted} />
+          )}
+        </aside>
+      </div>
     </div>
   );
 };

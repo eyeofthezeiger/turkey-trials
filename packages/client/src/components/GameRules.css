@@ -1,0 +1,29 @@
+/* components/GameRules.css */
+
+.game-rules {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border: 3px solid #ffea00;
+    border-radius: 10px;
+    color: #ffea00;
+    box-shadow: 0 0 10px #ffea00;
+    margin-bottom: 20px;
+  }
+  
+  .game-rules h2 {
+    font-family: 'Pacifico', cursive;
+    color: #ffea00;
+    text-shadow: 2px 2px #ff003c;
+    margin-bottom: 15px;
+  }
+  
+  .game-rules ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .game-rules li {
+    margin-bottom: 10px;
+    font-size: 1em;
+  }
+  

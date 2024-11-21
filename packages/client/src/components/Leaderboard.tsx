@@ -1,6 +1,7 @@
 // components/Leaderboard.tsx
 
 import React from "react";
+import "./Leaderboard.css";
 
 interface LeaderboardProps {
   leaderboard: { id: string; points: number }[];

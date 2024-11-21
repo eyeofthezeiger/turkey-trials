@@ -6,27 +6,41 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Bungee&family=Orbitron:wght@400;700&family=Pacifico&family=Press+Start+2P&display=swap');
 
+:root {
+  --background-color: #1B03A3; /* Electric Blue */
+  --text-color: #FFEA00; /* Bright Yellow */
+  --primary-color: #FF6EC7; /* Neon Pink */
+  --secondary-color: #FF003C; /* Hot Red */
+  --accent-color: #00FFC6; /* Turquoise */
+  --background-light: rgba(255, 255, 255, 0.1);
+  --border-color: #FFEA00; /* Bright Yellow */
+  --box-shadow-color: #FFEA00;
+  --font-family-main: 'Press Start 2P', cursive;
+  --font-family-title: 'Bungee', cursive;
+  --font-family-accent: 'Pacifico', cursive;
+}
+
 body {
-  background-color: #1B03A3; /* Electric Blue */
-  color: #FFEA00; /* Bright Yellow */
-  font-family: 'Press Start 2P', cursive;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: var(--font-family-main);
   margin: 0;
   padding: 0;
   overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Bungee', cursive;
-  color: #FF6EC7; /* Neon Pink */
-  text-shadow: 2px 2px #FFEA00; /* Bright Yellow */
+  font-family: var(--font-family-title);
+  color: var(--primary-color);
+  text-shadow: 2px 2px var(--text-color);
 }
 
 p, span, li, td {
-  font-family: 'Press Start 2P', cursive;
+  font-family: var(--font-family-main);
 }
 
 a {
-  color: #FFEA00; /* Bright Yellow */
+  color: var(--text-color);
   text-decoration: none;
 }
 
@@ -35,69 +49,170 @@ a:hover {
 }
 
 button {
-  background-color: #FF6EC7; /* Neon Pink */
-  color: #1B03A3; /* Electric Blue */
-  border: 3px solid #FFEA00; /* Bright Yellow */
-  font-family: 'Press Start 2P', cursive;
+  background-color: var(--primary-color);
+  color: var(--background-color);
+  border: 3px solid var(--text-color);
+  font-family: var(--font-family-main);
   font-size: 1em;
   padding: 10px 20px;
   cursor: pointer;
   transition: transform 0.3s, box-shadow 0.3s;
   margin: 5px;
+  border-radius: 5px;
 }
 
 button:hover {
   transform: scale(1.1);
-  box-shadow: 0 0 10px #FFEA00;
+  box-shadow: 0 0 10px var(--text-color);
+}
+
+.leave-button, .join-button {
+  width: 100%;
+  background-color: var(--secondary-color);
+}
+
+.leave-button:hover, .join-button:hover {
+  background-color: var(--accent-color);
+}
+
+.leave-button:disabled, .join-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 /* --------------------------------------------- */
-/* Navigation Styles */
+/* Header/Navbar Styles */
 /* --------------------------------------------- */
 
-.navigation {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  background-color: #FF003C; /* Hot Red */
+.app-header {
+  background-color: var(--secondary-color);
+  color: white;
   padding: 20px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.navigation button {
-  background-color: #00FFC6; /* Turquoise */
-  color: #1B03A3; /* Electric Blue */
-  border: 3px solid #FFEA00; /* Bright Yellow */
-  font-family: 'Press Start 2P', cursive;
+.app-header h1 {
+  font-size: 2.5em;
+  margin: 0;
+}
+
+/* --------------------------------------------- */
+/* Main Grid Layout */
+/* --------------------------------------------- */
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 20px;
+  padding: 20px;
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.left-column, .right-column {
+  background-color: var(--background-light);
+  padding: 20px;
+  border: 3px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 0 10px var(--box-shadow-color);
+  color: var(--text-color);
+  overflow-y: auto;
+}
+
+.center-column {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border: 3px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 0 10px var(--box-shadow-color);
+  color: var(--text-color);
+  overflow-y: auto;
+}
+
+@media (max-width: 1200px) {
+  .main-grid {
+    grid-template-columns: 1fr 3fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --------------------------------------------- */
+/* Host Controls Styles */
+/* --------------------------------------------- */
+
+.host-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.host-controls h2 {
+  font-family: var(--font-family-accent);
+  color: var(--text-color);
+  text-shadow: 2px 2px var(--secondary-color);
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.host-controls button {
+  background-color: var(--primary-color);
+  color: var(--background-color);
+  border: none;
+  padding: 10px;
+  margin-bottom: 10px;
   font-size: 1em;
-  padding: 10px 20px;
-  margin: 5px;
-  cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
+  border-radius: 5px;
+  transition: background-color 0.3s;
 }
 
-.navigation button:hover {
-  transform: rotate(-5deg) scale(1.1);
-  box-shadow: 0 0 10px #FFEA00;
+.host-controls button:hover {
+  background-color: var(--accent-color);
 }
+
+.host-controls button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------- */
+/* Game Rules Styles */
+/* --------------------------------------------- */
+
+/* GameRules.css styles are included in the component's CSS */
 
 /* --------------------------------------------- */
 /* Leaderboard Styles */
 /* --------------------------------------------- */
 
 .leaderboard {
-  background-color: #9D00FF; /* Vibrant Purple */
+  background-color: rgba(0, 0, 0, 0.2);
   padding: 20px;
-  margin: 20px auto;
-  border: 5px double #FFEA00; /* Bright Yellow */
-  box-shadow: 0 0 10px #FFEA00;
-  width: 80%;
+  border: 3px solid var(--text-color);
+  border-radius: 10px;
+  box-shadow: 0 0 15px var(--box-shadow-color);
+  color: var(--text-color);
+  font-family: var(--font-family-main);
+  overflow-y: auto;
 }
 
 .leaderboard h2 {
-  font-family: 'Pacifico', cursive;
-  color: #FFEA00; /* Bright Yellow */
-  text-shadow: 2px 2px #FF003C; /* Hot Red */
-  margin-bottom: 20px;
+  font-family: var(--font-family-accent);
+  color: var(--text-color);
+  text-shadow: 2px 2px var(--secondary-color);
+  margin-bottom: 15px;
+  text-align: center;
 }
 
 .leaderboard table {
@@ -107,200 +222,280 @@ button:hover {
 }
 
 .leaderboard th, .leaderboard td {
-  border: 2px solid #FF6EC7; /* Neon Pink */
-  padding: 10px;
+  border: 2px solid var(--primary-color);
+  padding: 12px;
   text-align: center;
   color: #FFFFFF;
 }
 
 .leaderboard tr:nth-child(even) {
-  background-color: #1B03A3; /* Electric Blue */
+  background-color: rgba(27, 3, 163, 0.6); /* Electric Blue with opacity */
 }
 
 .leaderboard tr:nth-child(odd) {
-  background-color: #FF003C; /* Hot Red */
+  background-color: rgba(255, 0, 60, 0.6); /* Hot Red with opacity */
 }
 
 .leaderboard th {
-  background-color: #00FFC6; /* Turquoise */
-  color: #1B03A3; /* Electric Blue */
+  background-color: var(--accent-color);
+  color: var(--background-color);
   font-size: 1.2em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.leaderboard tr:hover td {
+  background-color: var(--accent-color);
+  color: var(--background-color);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Responsive Table */
+@media (max-width: 600px) {
+  .leaderboard table, .leaderboard thead, .leaderboard tbody, .leaderboard th, .leaderboard td, .leaderboard tr {
+    display: block;
+  }
+
+  .leaderboard tr {
+    margin-bottom: 15px;
+  }
+
+  .leaderboard td {
+    text-align: right;
+    padding-left: 50%;
+    position: relative;
+  }
+
+  .leaderboard td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 10px;
+    width: 45%;
+    padding-right: 10px;
+    white-space: nowrap;
+    text-align: left;
+    font-weight: bold;
+  }
 }
 
 /* --------------------------------------------- */
-/* Red Light, Green Light Styles */
+/* Transition Message Styles */
 /* --------------------------------------------- */
 
-.red-light-green-light {
-  background: linear-gradient(45deg, #FF003C, #00FFC6);
-  padding: 20px;
-  color: #FFFFFF;
+.transition-message {
   text-align: center;
+  padding: 50px;
+  background-color: rgba(240, 240, 240, 0.8);
+  border-radius: 10px;
+  box-shadow: 0 0 10px var(--box-shadow-color);
 }
 
-.red-light-green-light h1 {
-  font-size: 2.5em;
-  animation: flashing 5s infinite;
+.transition-message h1 {
+  font-size: 2rem;
+  color: var(--text-color);
 }
 
-.red-light-green-light h3 {
-  font-size: 1.5em;
+/* --------------------------------------------- */
+/* Current Round Styles */
+/* --------------------------------------------- */
+
+.current-round {
+  text-align: center;
   margin-bottom: 20px;
 }
 
-.light-indicator {
-  margin: 20px auto;
-  padding: 10px;
-  border: 5px solid #FFEA00;
-  width: 200px;
-  font-size: 1.5em;
-  color: #FFFFFF;
-  text-shadow: 1px 1px #000000;
+.current-round h2 {
+  font-size: 1.5rem;
+  color: var(--text-color);
+  text-shadow: 1px 1px var(--secondary-color);
 }
 
+/* --------------------------------------------- */
+/* Tournament Over Styles */
+/* --------------------------------------------- */
+
+.tournament-over {
+  text-align: center;
+}
+
+.tournament-over h1 {
+  font-size: 2.5rem;
+  color: var(--secondary-color);
+  text-shadow: 2px 2px var(--text-color);
+}
+
+.tournament-over h2 {
+  font-size: 2em;
+  color: var(--accent-color);
+  text-shadow: 1px 1px var(--primary-color);
+}
+
+/* --------------------------------------------- */
+/* Responsive Adjustments */
+/* --------------------------------------------- */
+
+/* Add any additional responsive styles as needed */
+
+
+@keyframes neon-flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+    text-shadow:
+      0 0 4px #FFEA00,
+      0 0 10px #FFEA00,
+      0 0 20px #FFEA00,
+      0 0 40px #FF6EC7,
+      0 0 80px #FF6EC7,
+      0 0 90px #FF6EC7,
+      0 0 100px #FF6EC7,
+      0 0 150px #FF6EC7;
+  }
+  20%, 24%, 55% {
+    text-shadow: none;
+  }
+}
+
+.app-header h1 {
+  animation: neon-flicker 3s infinite;
+}
+
+/* components/RedLightGreenLight.css */
+
+/* --------------------------------------------- */
+/* Red Light Green Light Container */
+/* --------------------------------------------- */
+.red-light-green-light {
+  background: linear-gradient(135deg, #FF6EC7, #FFEA00); /* Neon Pink to Bright Yellow */
+  padding: 20px;
+  border: 3px solid var(--text-color);
+  border-radius: 10px;
+  box-shadow: 0 0 15px var(--box-shadow-color);
+  color: #FFFFFF;
+  text-align: center;
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* --------------------------------------------- */
+/* Light Indicator */
+/* --------------------------------------------- */
+.light-indicator {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  margin: 0 auto 20px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5em;
+  color: #FFFFFF;
+  box-shadow: 0 0 20px var(--box-shadow-color);
+  transition: background-color 0.5s ease;
+  animation: pulsate 2s infinite;
+}
+
+@keyframes pulsate {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 5px var(--box-shadow-color);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px var(--box-shadow-color);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 5px var(--box-shadow-color);
+  }
+}
+
+/* --------------------------------------------- */
+/* Game Area */
+/* --------------------------------------------- */
 .game-area {
   position: relative;
   height: 300px;
-  border: 5px dashed #FF6EC7;
+  border: 5px dashed var(--primary-color);
   margin: 20px auto;
-  width: 80%;
-  background: url('https://i.imgur.com/3aXzJkX.png'); /* Placeholder for a retro grid background */
+  width: 100%;
+  background: url('https://i.imgur.com/3aXzJkX.png'); /* Retro grid background */
   background-size: cover;
+  overflow: hidden;
 }
 
+/* --------------------------------------------- */
+/* Player Styles */
+/* --------------------------------------------- */
 .player {
   position: absolute;
-  background-color: #FFEA00;
-  width: 50px;
-  height: 50px;
-  line-height: 50px;
-  text-align: center;
-  color: #1B03A3;
-  font-weight: bold;
+  width: 40px;
+  height: 40px;
+  background-color: var(--accent-color);
   border: 2px solid #FFFFFF;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--background-color);
+  font-weight: bold;
+  font-size: 0.8em;
+  transition: left 0.5s ease, top 0.5s ease;
 }
 
+/* --------------------------------------------- */
+/* Move Button Styles */
+/* --------------------------------------------- */
 .move-button {
-  background-color: #FFEA00;
-  color: #1B03A3;
-  font-family: 'Press Start 2P', cursive;
-  padding: 15px 30px;
+  background-color: var(--primary-color);
+  color: var(--background-color);
   border: none;
+  padding: 15px 30px;
   cursor: pointer;
-  transition: transform 0.2s;
+  font-family: var(--font-family-main);
+  font-size: 1em;
+  border-radius: 5px;
+  transition: transform 0.2s, box-shadow 0.3s;
+  align-self: center;
   margin-top: 20px;
 }
 
 .move-button:hover {
   transform: translateY(-5px);
+  box-shadow: 0 0 10px var(--box-shadow-color);
 }
 
-@keyframes flashing {
-  0% { color: #FF003C; }
-  25% { color: #FF6EC7; }
-  50% { color: #FFEA00; }
-  75% { color: #00FFC6; }
-  100% { color: #FF003C; }
+.move-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 /* --------------------------------------------- */
-/* Tic Tac Toe Styles */
+/* Game Over Overlay */
 /* --------------------------------------------- */
-
-.tictactoe {
-  text-align: center;
-  padding: 20px;
-}
-
-.tictactoe-board {
-  display: grid;
-  grid-template-columns: repeat(3, 100px);
-  gap: 5px;
-  margin: 20px auto;
-}
-
-.tictactoe-cell {
-  width: 100px;
-  height: 100px;
-  border: 2px solid #FF6EC7;
+.game-over-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(27, 3, 163, 0.9); /* Semi-transparent Electric Blue */
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3em;
-  cursor: pointer;
-  background-color: #1B03A3;
-  color: #FFEA00;
+  flex-direction: column;
+  color: var(--text-color);
+  font-size: 2em;
+  border-radius: 10px;
+  z-index: 10;
 }
 
-.tictactoe-cell:hover {
-  background-color: #FF003C;
+.game-over-overlay h1 {
+  margin-bottom: 20px;
 }
 
-.tictactoe-reset-button {
-  margin-top: 20px;
+.game-over-overlay button {
   padding: 10px 20px;
-  background-color: #FFEA00;
-  color: #1B03A3;
-  font-family: 'Press Start 2P', cursive;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.2s;
+  font-size: 1em;
 }
-
-.tictactoe-reset-button:hover {
-  transform: translateY(-5px);
-}
-
-/* --------------------------------------------- */
-/* Rock Paper Scissors Styles */
-/* --------------------------------------------- */
-
-.rps {
-  text-align: center;
-  padding: 20px;
-}
-
-.rps-buttons {
-  margin: 20px;
-}
-
-.rps-buttons button {
-  margin: 0 10px;
-}
-
-/* --------------------------------------------- */
-/* Sliding Puzzle Styles */
-/* --------------------------------------------- */
-
-.sliding-puzzle {
-  text-align: center;
-  padding: 20px;
-}
-
-.sliding-puzzle-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 100px);
-  gap: 5px;
-  margin: 20px auto;
-}
-
-.sliding-puzzle-cell {
-  width: 100px;
-  height: 100px;
-  border: 1px solid #FF6EC7;
-  background-color: #FFFFFF;
-  cursor: pointer;
-  background-size: 300px 300px;
-}
-
-.sliding-puzzle-completed {
-  margin-top: 20px;
-}
-
-.sliding-puzzle-image {
-  width: 300px;
-  height: 300px;
-  border: 1px solid #FFEA00;
-}
-

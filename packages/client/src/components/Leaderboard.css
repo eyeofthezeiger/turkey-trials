@@ -1,0 +1,100 @@
+/* components/Leaderboard.css */
+
+/* --------------------------------------------- */
+/* Leaderboard Container */
+/* --------------------------------------------- */
+.leaderboard {
+    background-color: rgba(0, 0, 0, 0.2); /* Semi-transparent black for contrast */
+    padding: 20px;
+    border: 3px solid var(--text-color); /* Bright Yellow border */
+    border-radius: 10px;
+    box-shadow: 0 0 15px var(--box-shadow-color); /* Neon glow */
+    color: var(--text-color);
+    font-family: var(--font-family-main);
+    overflow-y: auto;
+  }
+  
+  /* --------------------------------------------- */
+  /* Leaderboard Header */
+  /* --------------------------------------------- */
+  .leaderboard h2 {
+    font-family: var(--font-family-accent);
+    color: var(--text-color);
+    text-shadow: 2px 2px var(--secondary-color);
+    margin-bottom: 15px;
+    text-align: center;
+  }
+  
+  /* --------------------------------------------- */
+  /* Leaderboard Table */
+  /* --------------------------------------------- */
+  .leaderboard table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Orbitron', sans-serif;
+  }
+  
+  /* Table Head */
+  .leaderboard th {
+    background-color: var(--accent-color); /* Turquoise */
+    color: var(--background-color); /* Electric Blue */
+    padding: 12px;
+    border: 2px solid var(--primary-color); /* Neon Pink */
+    font-size: 1.1em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  /* Table Body */
+  .leaderboard td {
+    padding: 12px;
+    border: 2px solid var(--primary-color); /* Neon Pink */
+    text-align: center;
+    color: #FFFFFF; /* White text for contrast */
+    background-color: rgba(27, 3, 163, 0.8); /* Electric Blue with opacity */
+  }
+  
+  /* Alternating Row Colors */
+  .leaderboard tr:nth-child(even) td {
+    background-color: rgba(27, 3, 163, 0.6); /* Slightly lighter Electric Blue */
+  }
+  
+  .leaderboard tr:nth-child(odd) td {
+    background-color: rgba(255, 0, 60, 0.6); /* Slightly lighter Hot Red */
+  }
+  
+  /* Hover Effect on Rows */
+  .leaderboard tr:hover td {
+    background-color: var(--accent-color); /* Turquoise */
+    color: var(--background-color); /* Electric Blue */
+    transition: background-color 0.3s, color 0.3s;
+  }
+  
+  /* Responsive Table */
+  @media (max-width: 600px) {
+    .leaderboard table, .leaderboard thead, .leaderboard tbody, .leaderboard th, .leaderboard td, .leaderboard tr {
+      display: block;
+    }
+  
+    .leaderboard tr {
+      margin-bottom: 15px;
+    }
+  
+    .leaderboard td {
+      text-align: right;
+      padding-left: 50%;
+      position: relative;
+    }
+  
+    .leaderboard td::before {
+      content: attr(data-label);
+      position: absolute;
+      left: 10px;
+      width: 45%;
+      padding-right: 10px;
+      white-space: nowrap;
+      text-align: left;
+      font-weight: bold;
+    }
+  }
+  
