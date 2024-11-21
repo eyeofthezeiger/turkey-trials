@@ -50,7 +50,7 @@ export class RedLightGreenLight {
     if (!player || player.hasFinished) return; // Prevent movement if finished
 
     if (this.state.light === "Green") {
-      player.position += 50;
+      player.position += 25;
       player.points += 4;
       console.log(`[Server] Player ${client.sessionId} moved to position ${player.position} and gained 4 points.`);
     } else {

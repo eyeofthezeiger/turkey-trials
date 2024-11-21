@@ -44,7 +44,7 @@
     border: 5px dashed var(--primary-color);
     margin: 20px auto;
     width: 100%;
-    background: url('https://i.imgur.com/3aXzJkX.png'); /* Retro grid background */
+    background:rgba(181, 173, 224, 0.9); /* Retro grid background */
     background-size: cover;
     overflow: hidden;
   }
