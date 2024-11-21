@@ -1,4 +1,5 @@
-/* components/RedLightGreenLight.tsx */
+// components/RedLightGreenLight.tsx
+
 import React, { useState, useEffect } from "react";
 import { Room } from "colyseus.js";
 import "./../App.css"; // Import the consolidated CSS file
@@ -7,9 +8,16 @@ interface Props {
   room: Room; // Pass the Colyseus room as a prop
 }
 
+interface PlayerInfo {
+  id: string;
+  name: string;
+  color: string;
+  position: number;
+}
+
 const RedLightGreenLight: React.FC<Props> = ({ room }) => {
   const [light, setLight] = useState("Red");
-  const [players, setPlayers] = useState<{ id: string; position: number }[]>([]);
+  const [players, setPlayers] = useState<PlayerInfo[]>([]);
   const [gameOver, setGameOver] = useState(false);
   const [playerPoints, setPlayerPoints] = useState<number>(0);
 
@@ -33,13 +41,13 @@ const RedLightGreenLight: React.FC<Props> = ({ room }) => {
       );
     });
 
-    room.onMessage("player_joined", (data) => {
-      console.log("[Client] Player joined:", data);
-      setPlayers((prev) => [...prev, { id: data.playerId, position: 0 }]);
+    room.onMessage("player_joined", (data: { player: PlayerInfo }) => {
+      console.log("[Client] Player joined:", data.player);
+      setPlayers((prev) => [...prev, data.player]);
     });
 
-    room.onMessage("player_left", (data) => {
-      console.log("[Client] Player left:", data);
+    room.onMessage("player_left", (data: { playerId: string }) => {
+      console.log("[Client] Player left:", data.playerId);
       setPlayers((prev) => prev.filter((player) => player.id !== data.playerId));
     });
 
@@ -65,23 +73,35 @@ const RedLightGreenLight: React.FC<Props> = ({ room }) => {
     room.send("request_points");
 
     // Initial state sync
-    const currentPlayers = [];
+    const currentPlayers: PlayerInfo[] = [];
     room.state.players.forEach((player, key) => {
-      currentPlayers.push({ id: key, position: player.position });
+      currentPlayers.push({
+        id: key,
+        name: player.name,
+        color: player.color,
+        position: player.position,
+      });
     });
     setPlayers(currentPlayers);
 
     // Listen for additions/removals
     room.state.players.onAdd = (player, key) => {
       console.log("[Client] Player added:", key);
-      setPlayers((prev) => [...prev, { id: key, position: player.position }]);
+      setPlayers((prev) => [
+        ...prev,
+        {
+          id: key,
+          name: player.name,
+          color: player.color,
+          position: player.position,
+        },
+      ]);
     };
 
     room.state.players.onRemove = (player, key) => {
       console.log("[Client] Player removed:", key);
       setPlayers((prev) => prev.filter((p) => p.id !== key));
     };
-
   }, [room]);
 
   const movePlayer = () => {
@@ -108,9 +128,10 @@ const RedLightGreenLight: React.FC<Props> = ({ room }) => {
             style={{
               top: `${50 + index * 30}px`,
               left: `${player.position}px`,
+              color: player.color,
             }}
           >
-            {`Player ${player.id}`}
+            {player.name}
           </div>
         ))}
       </div>

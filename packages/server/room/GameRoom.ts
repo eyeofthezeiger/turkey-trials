@@ -76,15 +76,19 @@ export class GameRoom extends Room<GameState> {
       }
     });
 
-    this.onMessage("join_lobby", (client) => {
-      console.log(`[Server] Client ${client.sessionId} requested to join the lobby.`);
+    this.onMessage("join_lobby", (client, data: { name: string; color: string }) => {
+      const { name, color } = data;
+      console.log(`[Server] Client ${client.sessionId} requested to join the lobby with name: ${name} and color: ${color}.`);
+      
       if (!this.state.players.has(client.sessionId)) {
         const newPlayer = new Player(client.sessionId);
+        newPlayer.name = name || "Anonymous";
+        newPlayer.color = color || "#000000"; // Default to black if no color provided
         this.state.players.set(client.sessionId, newPlayer);
-        console.log(`[Server] Client ${client.sessionId} added to lobby.`);
-        this.broadcast("player_joined", { playerId: client.sessionId });
+        console.log(`[Server] Client ${client.sessionId} added to lobby with name: ${name} and color: ${color}.`);
+        this.broadcast("player_joined", { player: newPlayer });
 
-        // If host is not yet assigned, assign this player
+        // Host assignment logic...
         if (!this.hostId) {
           this.hostId = client.sessionId;
           console.log(`[Server] Client ${client.sessionId} is assigned as the host.`);
@@ -185,7 +189,7 @@ export class GameRoom extends Room<GameState> {
   logPlayers() {
     console.log("[Debug] Current players in lobby:");
     for (const [id, player] of this.state.players.entries()) {
-      console.log(`Player ID: ${id}, Points: ${player.points}`);
+      console.log(`Player ID: ${id}, Name: ${player.name}, Color: ${player.color}, Points: ${player.points}`);
     }
   }
 

@@ -9,6 +9,7 @@ import Lobby from "./components/Lobby";
 import RoundWinner from "./components/RoundWinner";
 import GameWinner from "./components/GameWinner";
 import GameRules from "./components/GameRules"; // Import GameRules
+import LobbyForm from "./components/LobbyForm"; // Import the new LobbyForm
 import "./App.css"; // Import the consolidated CSS file
 
 type GamePageKey =
@@ -28,10 +29,16 @@ const serverUrl =
 
 const client = new Client(serverUrl);
 
+interface PlayerInfo {
+  id: string;
+  name: string;
+  color: string;
+}
+
 const App: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GamePageKey>("welcome");
   const [room, setRoom] = useState<Room | null>(null);
-  const [players, setPlayers] = useState<string[]>([]);
+  const [players, setPlayers] = useState<PlayerInfo[]>([]);
   const [inLobby, setInLobby] = useState<boolean>(false);
 
   const [playerPoints, setPlayerPoints] = useState<{
@@ -65,7 +72,7 @@ const App: React.FC = () => {
 
   const currentRound = getCurrentRound();
 
-  const handleJoinLobby = async () => {
+  const handleJoinLobby = async (name: string, color: string) => {
     console.log("[Client] Attempting to join or create room...");
     try {
       const gameRoom = await client.joinOrCreate("game_room");
@@ -76,9 +83,9 @@ const App: React.FC = () => {
       // Set the initial game state
       setCurrentGame(gameRoom.state.currentGame || "welcome");
 
-      // Send the join lobby message to the server
-      console.log("[Client] Sending join lobby request...");
-      gameRoom.send("join_lobby");
+      // Send the join lobby message to the server with name and color
+      console.log("[Client] Sending join lobby request with name and color...");
+      gameRoom.send("join_lobby", { name, color });
       setInLobby(true);
 
       // Request initial points after joining the lobby
@@ -127,17 +134,17 @@ const App: React.FC = () => {
       setCountdown(10); // Start countdown from 10 seconds
     };
 
-    const onPlayerJoined = (data: { playerId: string }) => {
-      console.log(`[Client] Player joined: ${data.playerId}`);
-      setPlayers((prevPlayers) => [...prevPlayers, data.playerId]);
+    const onPlayerJoined = (data: { player: PlayerInfo }) => {
+      console.log(`[Client] Player joined: ${data.player.name} (${data.player.id})`);
+      setPlayers((prevPlayers) => [...prevPlayers, data.player]);
 
       // Update leaderboard to include the new player with 0 points if not already present
       setLeaderboard((prevLeaderboard) => {
         const playerExists = prevLeaderboard.some(
-          (p) => p.id === data.playerId
+          (p) => p.id === data.player.id
         );
         if (!playerExists) {
-          return [...prevLeaderboard, { id: data.playerId, points: 0 }];
+          return [...prevLeaderboard, { id: data.player.id, points: 0 }];
         }
         return prevLeaderboard;
       });
@@ -146,7 +153,7 @@ const App: React.FC = () => {
     const onPlayerLeft = (data: { playerId: string }) => {
       console.log(`[Client] Player left: ${data.playerId}`);
       setPlayers((prevPlayers) =>
-        prevPlayers.filter((player) => player !== data.playerId)
+        prevPlayers.filter((player) => player.id !== data.playerId)
       );
 
       // Remove player from leaderboard
@@ -315,7 +322,7 @@ const App: React.FC = () => {
             <h2>
               Winner: {leaderboard[0]?.id} with {leaderboard[0]?.points} points!
             </h2>
-            <Leaderboard leaderboard={leaderboard} gameStarted={gameStarted} />
+            <Leaderboard leaderboard={leaderboard} players={players} gameStarted={gameStarted} />
           </div>
         );
       default:
@@ -430,21 +437,21 @@ const App: React.FC = () => {
                 <div className="lobby-info">
                   <h3>Players in Lobby:</h3>
                   <ul>
-                    {players.map((player, index) => (
-                      <li key={index}>{player}</li>
+                    {players.map((player) => (
+                      <li key={player.id} style={{ color: player.color }}>
+                        {player.name} {player.id === hostId && "(Host)"}
+                      </li>
                     ))}
                   </ul>
                 </div>
               )}
             </div>
           ) : (
-            <button onClick={handleJoinLobby} className="join-button">
-              Join Lobby
-            </button>
+            <LobbyForm onJoin={(name, color) => handleJoinLobby(name, color)} />
           )}
 
           {inLobby && (
-            <Leaderboard leaderboard={leaderboard} gameStarted={gameStarted} />
+            <Leaderboard leaderboard={leaderboard} players={players} gameStarted={gameStarted} />
           )}
         </aside>
       </div>
