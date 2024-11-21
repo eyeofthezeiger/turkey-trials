@@ -54,6 +54,19 @@ const App: React.FC = () => {
   const [isHost, setIsHost] = useState<boolean>(false);
   const [hostId, setHostId] = useState<string | null>(null);
 
+  // State to hold round and game winner data
+  const [roundWinnerData, setRoundWinnerData] = useState<{
+    round: number;
+    winnerName: string;
+    secondPlace: string;
+    thirdPlace: string;
+  } | null>(null);
+
+  const [gameWinnerData, setGameWinnerData] = useState<{
+    winnerName: string;
+    totalPoints: number;
+  } | null>(null);
+
   const gameStarted =
     currentGame !== "welcome" && currentGame !== "tournament_over";
 
@@ -109,6 +122,8 @@ const App: React.FC = () => {
       setLeaderboard([]);
       setPlayerPoints({});
       setCurrentGame("welcome");
+      setRoundWinnerData(null);
+      setGameWinnerData(null);
 
       // Leave the room
       room.leave();
@@ -202,21 +217,30 @@ const App: React.FC = () => {
       }
     };
 
-    const onGameOver = () => {
-      setCurrentGame("tournament_over");
+    const onGameOver = (data: { winnerName: string; totalPoints: number }) => {
+      console.log("[Client] Game over.");
+      setGameWinnerData({
+        winnerName: data.winnerName,
+        totalPoints: data.totalPoints,
+      });
+      setCurrentGame("game_winner");
     };
 
-    const onRoundOver = (data: { round: number }) => {
-      console.log(`[Client] Round ${data.round} has ended.`);
-      setNextGame("round_winner");
-      setIsTransitioning(true);
-      setCountdown(5); // Shorter countdown for round winner
+    const onRoundOver = (data: { round: number; winnerName: string; secondPlace: string; thirdPlace: string }) => {
+      console.log("[Client] Round over.");
+      setRoundWinnerData({
+        round: data.round,
+        winnerName: data.winnerName,
+        secondPlace: data.secondPlace,
+        thirdPlace: data.thirdPlace,
+      });
+      setCurrentGame("round_winner");
+      setIsTransitioning(false);
+      setCountdown(0); // No countdown for immediate transition
     };
 
     const onGameWinner = () => {
-      setNextGame("game_winner");
-      setIsTransitioning(true);
-      setCountdown(5); // Shorter countdown for game winner
+      // Deprecated: Now handled by onGameOver with data
     };
 
     // Attach event listeners
@@ -231,7 +255,7 @@ const App: React.FC = () => {
     room.onMessage("host_assigned", onHostAssigned);
     room.onMessage("game_over", onGameOver);
     room.onMessage("round_over", onRoundOver);
-    room.onMessage("game_winner", onGameWinner); // New message
+    // room.onMessage("game_winner", onGameWinner); // Deprecated
 
     // Cleanup listeners on component unmount or room change
     return () => {
@@ -246,7 +270,7 @@ const App: React.FC = () => {
       room.off("host_assigned", onHostAssigned);
       room.off("game_over", onGameOver);
       room.off("round_over", onRoundOver);
-      room.off("game_winner", onGameWinner); // New message
+      // room.off("game_winner", onGameWinner); // Deprecated
     };
   }, [room]);
 
@@ -300,18 +324,25 @@ const App: React.FC = () => {
       case "final_puzzle":
         return <SlidingPuzzle room={room!} />;
       case "round_winner":
-        // Hardcoded data for demonstration
-        return (
+        return roundWinnerData ? (
           <RoundWinner
-            roundNumber={currentRound}
-            winnerName="Alice"
-            secondPlace="Bob"
-            thirdPlace="Charlie"
+            roundNumber={roundWinnerData.round}
+            winnerName={roundWinnerData.winnerName}
+            secondPlace={roundWinnerData.secondPlace}
+            thirdPlace={roundWinnerData.thirdPlace}
           />
+        ) : (
+          <h2>Loading Round Winner...</h2>
         );
       case "game_winner":
-        // Hardcoded data for demonstration
-        return <GameWinner winnerName="Alice" totalPoints={150} />;
+        return gameWinnerData ? (
+          <GameWinner
+            winnerName={gameWinnerData.winnerName}
+            totalPoints={gameWinnerData.totalPoints}
+          />
+        ) : (
+          <h2>Loading Game Winner...</h2>
+        );
       case "tournament_over":
         // Tournament is over, display final leaderboard and winner
         return (

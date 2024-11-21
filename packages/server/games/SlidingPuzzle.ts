@@ -29,11 +29,11 @@ export class SlidingPuzzle {
     );
 
     // Award points
-    player.points += 5;
+    player.points += 25;
 
     // Check if all puzzles are completed
     if (player.puzzlesCompleted === 7) {
-      player.points += 5; // Bonus points
+      player.points += 500; // Bonus points
       this.broadcast("game_over", { playerId: client.sessionId });
       console.log(`[Server] Player ${client.sessionId} has completed all puzzles.`);
     }

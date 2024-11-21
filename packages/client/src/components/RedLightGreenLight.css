@@ -135,3 +135,58 @@
     font-size: 1em;
   }
   
+  .red-light-green-light {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .light-indicator {
+    transition: background-color 0.5s ease;
+  }
+  
+  .game-area {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    height: 300px;
+    border: 2px solid #000;
+    background-color: #ccc;
+    margin-bottom: 20px;
+  }
+  
+  .finish-line {
+    position: absolute;
+    top: 0;
+    /* left is set dynamically via inline styles */
+    width: 4px;
+    height: 100%;
+    background-color: yellow;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  
+  .finish-line span {
+    transform: rotate(-90deg);
+    background-color: yellow;
+    padding: 2px;
+    font-weight: bold;
+  }
+  
+  .player {
+    position: absolute;
+    font-weight: bold;
+  }
+  
+  .move-button, .end-round-button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .move-button:disabled, .end-round-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }

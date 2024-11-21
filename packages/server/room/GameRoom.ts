@@ -70,7 +70,7 @@ export class GameRoom extends Room<GameState> {
         // Optionally, reset some state if needed
         // Start game timer if necessary, but in current requirements, timer is on client side
       } else if (newGame === "tournament_over") {
-        this.broadcastPointsUpdate();
+        this.determineGameWinner();
       } else {
         console.warn(`[Server] Unknown game requested: ${newGame}`);
       }
@@ -132,6 +132,20 @@ export class GameRoom extends Room<GameState> {
     });
   }
 
+  determineGameWinner() {
+    const sortedPlayers = Array.from(this.state.players.values()).sort((a, b) => b.points - a.points);
+    const winner = sortedPlayers[0];
+    const totalPoints = winner.points;
+
+    // Broadcast game winner details
+    this.broadcast("game_over", {
+      winnerName: winner.name,
+      totalPoints: totalPoints,
+    });
+
+    console.log(`[Server] Tournament Over. Winner: ${winner.name} with ${totalPoints} points.`);
+  }
+
   broadcastPointsUpdate() {
     const points: { [key: string]: number } = {};
     for (const [id, player] of this.state.players.entries()) {
@@ -176,6 +190,11 @@ export class GameRoom extends Room<GameState> {
             console.log("[Server] No players left in the lobby.");
           }
         }
+
+        // If a player leaves who has finished, adjust finishOrder
+        if (player.hasFinished) {
+          this.redLightGreenLight.handlePlayerLeave(client.sessionId);
+        }
       }
     } else {
       console.log(`[Debug] Client ${client.sessionId} was not in the lobby.`);
@@ -197,7 +216,7 @@ export class GameRoom extends Room<GameState> {
   logPlayers() {
     console.log("[Debug] Current players in lobby:");
     for (const [id, player] of this.state.players.entries()) {
-      console.log(`Player ID: ${id}, Name: ${player.name}, Color: ${player.color}, Points: ${player.points}`);
+      console.log(`Player ID: ${id}, Name: ${player.name}, Color: ${player.color}, Points: ${player.points}, Finished: ${player.hasFinished}`);
     }
   }
 

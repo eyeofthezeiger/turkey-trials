@@ -47,7 +47,7 @@ export class RedLightGreenLight {
     if (this.gameOver) return;
 
     const player = this.state.players.get(client.sessionId);
-    if (!player) return;
+    if (!player || player.hasFinished) return; // Prevent movement if finished
 
     if (this.state.light === "Green") {
       player.position += 50;
@@ -59,16 +59,20 @@ export class RedLightGreenLight {
       console.log(`[Server] Player ${client.sessionId} moved on Red Light. Lost 10 points and reset to start.`);
     }
 
-    this.broadcast("player_update", { id: client.sessionId, position: player.position });
+    this.broadcast("player_update", { id: client.sessionId, position: player.position, points: player.points });
 
     // Broadcast points update
     this.broadcastPointsUpdate();
 
     // Check if player reached finish line
-    if (player.position >= this.state.finishLine && !this.finishOrder.includes(player)) {
+    if (player.position >= this.state.finishLine && !player.hasFinished) {
+      player.hasFinished = true;
       this.finishOrder.push(player);
       console.log(`[Server] Player ${client.sessionId} reached the finish line!`);
       this.broadcast("player_finished", { playerId: client.sessionId, position: this.finishOrder.length });
+
+      // Notify all clients that this player has finished
+      this.broadcast("player_has_finished", { playerId: client.sessionId });
 
       // Check if all players have finished
       if (this.finishOrder.length === this.state.players.size) {
@@ -84,8 +88,19 @@ export class RedLightGreenLight {
     this.gameOver = true;
     this.stopLightInterval();
 
-    // Broadcast round over
-    this.broadcast("round_over", { round: this.round });
+    // Determine winners based on points
+    const sortedPlayers = Array.from(this.state.players.values()).sort((a, b) => b.points - a.points);
+    const winner = sortedPlayers[0];
+    const secondPlace = sortedPlayers[1];
+    const thirdPlace = sortedPlayers[2];
+
+    // Broadcast round winner details
+    this.broadcast("round_over", {
+      round: this.round,
+      winnerName: winner.name,
+      secondPlace: secondPlace ? secondPlace.name : "N/A",
+      thirdPlace: thirdPlace ? thirdPlace.name : "N/A",
+    });
 
     // Reset game state for potential next round
     this.resetGame();
@@ -103,8 +118,9 @@ export class RedLightGreenLight {
     this.state.light = "Red";
     for (const player of this.state.players.values()) {
       player.position = 0;
+      player.hasFinished = false; // Reset finish flag
     }
-    this.broadcast("player_update", { id: "all", position: 0 });
+    this.broadcast("player_update", { id: "all", position: 0, points: null }); // points: null to indicate no change
   }
 
   stopLightInterval() {
@@ -129,7 +145,7 @@ export class RedLightGreenLight {
     // Handle player leaving during the game if necessary
     const player = this.state.players.get(playerId);
     if (player) {
-      if (this.finishOrder.includes(player)) {
+      if (player.hasFinished) {
         this.finishOrder = this.finishOrder.filter((p) => p.id !== playerId);
       }
       this.broadcast("player_left", { playerId });
