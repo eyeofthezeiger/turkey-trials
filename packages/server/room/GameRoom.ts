@@ -38,6 +38,7 @@ export class GameRoom extends Room<GameState> {
         "rlgl_round2",
         "rlgl_round3",
         "final_puzzle",
+        "sliding_puzzle",
         "tournament_over",
       ];
 
@@ -69,6 +70,8 @@ export class GameRoom extends Room<GameState> {
         // For final puzzle, the client handles image shuffling; server does not need to broadcast new puzzles
         // Optionally, reset some state if needed
         // Start game timer if necessary, but in current requirements, timer is on client side
+      } else if (newGame === "sliding_puzzle") {
+        this.slidingPuzzle.startSlidingPuzzle();
       } else if (newGame === "tournament_over") {
         this.determineGameWinner();
       } else {
@@ -82,7 +85,14 @@ export class GameRoom extends Room<GameState> {
         return;
       }
       console.log(`[Server] Host ${client.sessionId} requested to end the round.`);
-      this.redLightGreenLight.handleEndRound();
+
+      // Determine which game is currently active and end it accordingly
+      if (this.state.currentGame === "sliding_puzzle") {
+        this.slidingPuzzle.handleEndRoundRequest();
+      } else if (this.state.currentGame.startsWith("rlgl_round")) {
+        this.redLightGreenLight.handleEndRound();
+      }
+      // Add other game end handlers if necessary
     });
 
     this.onMessage("join_lobby", (client, data: { name: string; color: string }) => {
@@ -135,15 +145,15 @@ export class GameRoom extends Room<GameState> {
   determineGameWinner() {
     const sortedPlayers = Array.from(this.state.players.values()).sort((a, b) => b.points - a.points);
     const winner = sortedPlayers[0];
-    const totalPoints = winner.points;
+    const totalPoints = winner ? winner.points : 0;
 
     // Broadcast game winner details
     this.broadcast("game_over", {
-      winnerName: winner.name,
+      winnerName: winner ? winner.name : "No Winner",
       totalPoints: totalPoints,
     });
 
-    console.log(`[Server] Tournament Over. Winner: ${winner.name} with ${totalPoints} points.`);
+    console.log(`[Server] Tournament Over. Winner: ${winner ? winner.name : "No Winner"} with ${totalPoints} points.`);
   }
 
   broadcastPointsUpdate() {
@@ -166,6 +176,7 @@ export class GameRoom extends Room<GameState> {
 
   stopAllTimers() {
     this.redLightGreenLight.stopLightInterval();
+    this.slidingPuzzle.resetSlidingPuzzle();
     this.state.timerRunning = false;
     console.log("[Server] Stopped all game timers and intervals.");
   }
@@ -192,9 +203,13 @@ export class GameRoom extends Room<GameState> {
         }
 
         // If a player leaves who has finished, adjust finishOrder
-        if (player.hasFinished) {
-          this.redLightGreenLight.handlePlayerLeave(client.sessionId);
-        }
+        // if (player.hasFinished) {
+        //   if (this.state.currentGame === "sliding_puzzle") {
+        //     this.slidingPuzzle.handlePlayerLeave(client.sessionId);
+        //   } else if (this.state.currentGame.startsWith("rlgl_round")) {
+        //     this.redLightGreenLight.handlePlayerLeave(client.sessionId);
+        //   }
+        // }
       }
     } else {
       console.log(`[Debug] Client ${client.sessionId} was not in the lobby.`);
@@ -216,7 +231,7 @@ export class GameRoom extends Room<GameState> {
   logPlayers() {
     console.log("[Debug] Current players in lobby:");
     for (const [id, player] of this.state.players.entries()) {
-      console.log(`Player ID: ${id}, Name: ${player.name}, Color: ${player.color}, Points: ${player.points}, Finished: ${player.hasFinished}`);
+      console.log(`Player ID: ${id}, Name: ${player.name}, Color: ${player.color}, Points: ${player.points}, Puzzles Completed: ${player.puzzlesCompleted}, Finished: ${player.hasFinished}`);
     }
   }
 

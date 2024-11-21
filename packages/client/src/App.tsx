@@ -387,6 +387,7 @@ const App: React.FC = () => {
   };
 
   const triggerGameWinner = () => {
+    endTournament();
     setNextGame("game_winner");
     setIsTransitioning(true);
     setCountdown(5); // Short countdown
