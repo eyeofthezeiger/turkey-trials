@@ -51,68 +51,50 @@ export class RedLightGreenLight {
 
     if (this.state.light === "Green") {
       player.position += 50;
-      console.log(`[Server] Player ${client.sessionId} moved to position ${player.position}`);
-      this.checkFinishLine(client, player);
+      player.points += 4;
+      console.log(`[Server] Player ${client.sessionId} moved to position ${player.position} and gained 4 points.`);
     } else {
-      player.position = 0; // Reset position on Red Light
-      console.log(`[Server] Player ${client.sessionId} moved on Red Light. Reset to start.`);
+      player.points = Math.max(player.points - 10, 0);
+      player.position = 0;
+      console.log(`[Server] Player ${client.sessionId} moved on Red Light. Lost 10 points and reset to start.`);
     }
 
     this.broadcast("player_update", { id: client.sessionId, position: player.position });
+
+    // Broadcast points update
+    this.broadcastPointsUpdate();
+
+    // Check if player reached finish line
+    if (player.position >= this.state.finishLine && !this.finishOrder.includes(player)) {
+      this.finishOrder.push(player);
+      console.log(`[Server] Player ${client.sessionId} reached the finish line!`);
+      this.broadcast("player_finished", { playerId: client.sessionId, position: this.finishOrder.length });
+
+      // Check if all players have finished
+      if (this.finishOrder.length === this.state.players.size) {
+        this.endGame();
+      }
+    }
+  }
+
+  endGame() {
+    if (this.gameOver) return;
+
+    console.log(`[Server] Ending Red Light, Green Light Round ${this.round}.`);
+    this.gameOver = true;
+    this.stopLightInterval();
+
+    // Broadcast round over
+    this.broadcast("round_over", { round: this.round });
+
+    // Reset game state for potential next round
+    this.resetGame();
   }
 
   private toggleLight() {
     this.state.light = this.state.light === "Red" ? "Green" : "Red";
     console.log(`[Server] Light toggled to: ${this.state.light}`);
     this.broadcast("light_update", { light: this.state.light });
-  }
-
-  private checkFinishLine(client: Client, player: Player) {
-    if (player.position >= this.state.finishLine && !this.finishOrder.includes(player)) {
-      this.finishOrder.push(player);
-      console.log(`[Server] Player ${client.sessionId} reached the finish line!`);
-      this.broadcast("player_finished", { playerId: client.sessionId, position: this.finishOrder.length });
-
-      if (this.finishOrder.length >= 1) { // Adjust based on game design
-        this.endGame();
-      }
-    }
-  }
-
-  private endGame() {
-    console.log(`[Server] Ending Red Light, Green Light Round ${this.round}.`);
-    this.gameOver = true;
-    this.stopLightInterval();
-
-    // Award points based on finishing positions
-    for (let i = 0; i < this.finishOrder.length; i++) {
-      const player = this.finishOrder[i];
-      if (i === 0) {
-        player.points += 10;
-      } else if (i === 1) {
-        player.points += 8;
-      } else if (i === 2) {
-        player.points += 6;
-      } else {
-        player.points += 4;
-      }
-    }
-
-    // Award participation points to those who didn't finish
-    for (const [id, player] of this.state.players.entries()) {
-      if (!this.finishOrder.includes(player)) {
-        player.points += 2;
-      }
-    }
-
-    // Broadcast updated points
-    this.broadcastPointsUpdate();
-
-    // Notify clients that the round is over (not game over)
-    this.broadcast("round_over", { round: this.round });
-
-    // Reset game state for potential next round
-    this.resetGame();
   }
 
   private resetGame() {
@@ -122,6 +104,7 @@ export class RedLightGreenLight {
     for (const player of this.state.players.values()) {
       player.position = 0;
     }
+    this.broadcast("player_update", { id: "all", position: 0 });
   }
 
   stopLightInterval() {
@@ -136,6 +119,10 @@ export class RedLightGreenLight {
     }
     this.broadcast("points_update", { points });
     console.log(`[Server] Broadcasted points_update:`, points);
+  }
+
+  handleEndRound() {
+    this.endGame();
   }
 
   handlePlayerLeave(playerId: string) {

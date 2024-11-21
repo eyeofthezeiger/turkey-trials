@@ -76,6 +76,15 @@ export class GameRoom extends Room<GameState> {
       }
     });
 
+    this.onMessage("end_round", (client) => {
+      if (client.sessionId !== this.hostId) {
+        console.warn(`[Server] Non-host ${client.sessionId} attempted to end round.`);
+        return;
+      }
+      console.log(`[Server] Host ${client.sessionId} requested to end the round.`);
+      this.redLightGreenLight.handleEndRound();
+    });
+
     this.onMessage("join_lobby", (client, data: { name: string; color: string }) => {
       const { name, color } = data;
       console.log(`[Server] Client ${client.sessionId} requested to join the lobby with name: ${name} and color: ${color}.`);
@@ -142,7 +151,6 @@ export class GameRoom extends Room<GameState> {
   }
 
   stopAllTimers() {
-    // Removed slidingPuzzle.stopTimer() as it's no longer managed by the server
     this.redLightGreenLight.stopLightInterval();
     this.state.timerRunning = false;
     console.log("[Server] Stopped all game timers and intervals.");

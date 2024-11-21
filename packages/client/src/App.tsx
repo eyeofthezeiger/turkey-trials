@@ -208,14 +208,12 @@ const App: React.FC = () => {
 
     const onRoundOver = (data: { round: number }) => {
       console.log(`[Client] Round ${data.round} has ended.`);
-      // For demonstration, we'll transition to the Round Winner screen with hardcoded data
       setNextGame("round_winner");
       setIsTransitioning(true);
       setCountdown(5); // Shorter countdown for round winner
     };
 
     const onGameWinner = () => {
-      // Transition to the Game Winner screen with hardcoded data
       setNextGame("game_winner");
       setIsTransitioning(true);
       setCountdown(5); // Shorter countdown for game winner
@@ -298,7 +296,7 @@ const App: React.FC = () => {
       case "rlgl_round1":
       case "rlgl_round2":
       case "rlgl_round3":
-        return <RedLightGreenLight room={room!} />;
+        return <RedLightGreenLight room={room!} isHost={isHost} />;
       case "final_puzzle":
         return <SlidingPuzzle room={room!} />;
       case "round_winner":
